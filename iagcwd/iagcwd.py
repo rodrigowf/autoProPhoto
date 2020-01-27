@@ -54,25 +54,27 @@ def run(img):
     YCrCb = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
     Y = YCrCb[:, :, 0]
     # Determine whether image is bright or dimmed
-    threshold = 0.3
-    exp_in = 112  # Expected global average intensity
+    threshold = 0.1
+    exp_in = 83  # Expected global average intensity
     M, N = img.shape[:2]
     mean_in = np.sum(Y / (M * N))
     t = (mean_in - exp_in) / exp_in
 
     # Process image for gamma correction
     img_output = None
+    edited = True
     if t < -threshold:  # Dimmed Image
-        print(": Dimmed")
+        # print(": Dimmed")
         result = process_dimmed(Y)
         YCrCb[:, :, 0] = result
         img_output = cv2.cvtColor(YCrCb, cv2.COLOR_YCrCb2BGR)
     elif t > threshold:
-        print(": Bright Image")  # Bright Image
+        # print(": Bright")  # Bright Image
         result = process_bright(Y)
         YCrCb[:, :, 0] = result
         img_output = cv2.cvtColor(YCrCb, cv2.COLOR_YCrCb2BGR)
     else:
         img_output = img
+        edited = False
 
-    return img_output
+    return img_output, edited
