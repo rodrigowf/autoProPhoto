@@ -1,0 +1,6 @@
+ESRGAN              - esrgan    ( 4x resolution )
+iawgcwd             - iawgcwd   ( gamma )
+LapSRN-tensorflow   - lapsrn    ( 4x resolution )
+neural-enhance      - neurenh   ( 2x resolution / noise )
+noise2noise         - n2n       ( noise )
+WB_sRGB             - wbsrgb    ( color )
