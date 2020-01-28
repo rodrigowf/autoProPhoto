@@ -198,7 +198,6 @@ def test(file):
         tl.vis.save_image(input_image, save_dir+'/test_input.png')
 
 
-
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
