@@ -5,7 +5,7 @@ import numpy as np
 from skimage import exposure, util
 from wbsrgb.wbsrg import WB
 from n2n.denoiser import DeNoiser
-from neurenh.enhance import NeuralEnhancer
+# from neurenh.enhance import NeuralEnhancer
 from esrgan.main import Esrgan
 
 
@@ -80,9 +80,12 @@ def process_batch(imgs):
     del out4
 
     print('Aplicado correção de artefatos ...')
-    enhancer = NeuralEnhancer()
-    out6 = [enhancer.process(img) for img in out5]
-    del enhancer
+    # enhancer = NeuralEnhancer()
+    # out6 = [enhancer.process(img) for img in out5]
+    # del enhancer
+    denoiser = DeNoiser()
+    out6 = [denoiser.run(img) for img in out5]
+    del denoiser
     del out5
 
     print('Aplicado ultima correçãozinha de cores ...')
@@ -121,20 +124,20 @@ def run_batch(input_dir, output_dir):
 def load_all_libs():
     global wb
     global denoiser
-    global enhancer
     global grower
+    # global enhancer
 
     wb = WB()
     denoiser = DeNoiser()
-    enhancer = NeuralEnhancer()
     grower = Esrgan()
+    # enhancer = NeuralEnhancer()
 
 
 def clean_all_libs():
     del wb
     del denoiser
-    del enhancer
     del grower
+    # del enhancer
 
 
 def process_image(img):
@@ -145,8 +148,8 @@ def process_image(img):
     out4 = antiblur(out3)
     print('crescendo ........')
     out5 = grower.run(out4)
-    print('enhancing ........')
-    out6 = enhancer.process(out5)
+    print('denoising ........')
+    out6 = denoiser.run(out5)
     print('feito!')
     out7 = wb.run(out6)
     return out7
