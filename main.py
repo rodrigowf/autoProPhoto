@@ -138,8 +138,11 @@ def process_image(img):
     out2 = gamma(out1)
     out3 = denoiser.run(out2)
     out4 = antiblur(out3)
+    print('crescendo ........')
     out5 = grower.run(out4)
+    print('enhancing ........')
     out6 = enhancer.process(out5)
+    print('feito!')
     out7 = wb.run(out6)
     return out7
 
