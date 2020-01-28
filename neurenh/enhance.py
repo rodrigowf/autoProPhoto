@@ -37,7 +37,7 @@ T.nnet.softminus = lambda x: x - T.nnet.softplus(x)
 
 
 class args:
-    device = 'gpu'      # Name of the CPU/GPU to use, for Theano.
+    device = 'cuda0'      # Name of the CPU/GPU to use, for Theano.
 
     type = 'photo'      # Name of the neural network to load/save.
     model = 'repair'    # Specific trained version of the model.
