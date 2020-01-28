@@ -2,26 +2,11 @@ import cv2
 import os
 import numpy as np
 
+from skimage import exposure, util
 from wbsrgb.wbsrg import WB
 from n2n.denoiser import DeNoiser
 from neurenh.enhance import NeuralEnhancer
-from skimage import exposure, util
 from esrgan.main import Esrgan
-
-in_dir = './_input/'
-out_dir = "./_output/"  # output directory
-
-# wb_model = WB()
-# wb = wb_model.run  # função!!
-#
-# denoiser = DeNoiser()
-# denoise = denoiser.run
-#
-# enhancer = NeuralEnhancer()
-# enhance = enhancer.process
-#
-# grower = Esrgan()
-# grow = grower.run
 
 
 def gamma(img):
@@ -59,8 +44,10 @@ def antiblur(image):
     return image
 
 
-def process_batch(imgs):
+# ----------------------------------------------------
 
+
+def process_batch(imgs):
     # workflow 1 begins here for each batch:
 
     print('Iniciando procesamento ...')
@@ -72,8 +59,8 @@ def process_batch(imgs):
     out2 = [gamma(img) for img in out1]
     del out1
 
-    denoiser = DeNoiser()
     print('Aplicado ajuste de contraste (e cor) ...')
+    denoiser = DeNoiser()
     out3 = [denoiser.run(img) for img in out2]
     del denoiser
     del out2
@@ -94,9 +81,9 @@ def process_batch(imgs):
     del enhancer
     del out5
 
-    print('Aplicado ultima correçãozinha de cores...')
+    print('Aplicado ultima correçãozinha de cores ...')
     wb = WB()
-    out7 = [wb(img) for img in out6]
+    out7 = [wb.run(img) for img in out6]
     del wb
     del out6
 
@@ -111,7 +98,7 @@ def run_batch(input_dir, output_dir):
 
     for f in os.listdir(input_dir):  # ve tudo o que tem na pasta dada...
         if f.lower().endswith(valid_images):  # se for um dos arquivos válidos:
-            filepath = os.path.join(in_dir, f)
+            filepath = os.path.join(input_dir, f)
             filename, file_extension = os.path.splitext(filepath)  # get file parts
             img = cv2.imread(filepath)  # read the image
             imgs.append(img)
@@ -127,21 +114,40 @@ def run_batch(input_dir, output_dir):
     print('tudo salvo! vá na paz!!')
 
 
+def load_all_libs():
+    global wb
+    global denoiser
+    global enhancer
+    global grower
+
+    wb = WB()
+    denoiser = DeNoiser()
+    enhancer = NeuralEnhancer()
+    grower = Esrgan()
+
+
+def clean_all_libs():
+    del wb
+    del denoiser
+    del enhancer
+    del grower
+
+
 def process_image(img):
     # workflow 1 begins here for each image:
-    out1 = wb(img)
+    out1 = wb.run(img)
     out2 = gamma(out1)
-    out3 = denoise(out2)
+    out3 = denoiser.run(out2)
     out4 = antiblur(out3)
-    out5 = grow(out4)
-    out6 = enhance(out5)
-    out7 = wb(out6)
+    out5 = grower.run(out4)
+    out6 = enhancer.process(out5)
+    out7 = wb.run(out6)
     return out7
 
 
-def run_single(in_path):
-    # filename = "dogy.jpg"  # input image filename
-    # in_path = in_dir + '/' + filename
+def run_single(in_path, out_dir):
+    load_all_libs()
+
     filename = os.path.basename(in_path)
 
     img = cv2.imread(in_path)  # read the image
@@ -150,6 +156,8 @@ def run_single(in_path):
 
 
 def run_multiple(input_dir, output_dir):
+    load_all_libs()
+
     imgfiles = []
     valid_images = (".jpg", ".jpeg", ".png")
 
@@ -165,4 +173,8 @@ def run_multiple(input_dir, output_dir):
                     + file_extension, outImg)  # save it
 
 
-# run_multiple(input_dir, out_dir)
+
+# in_dir = './_input/'
+# out_dir = "./_output/"  # output directory
+
+# run_multiple(in_dir, out_dir)
