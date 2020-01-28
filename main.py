@@ -37,7 +37,6 @@ def antiblur(image):
         print('blurred! correcting....')
         acr = 30
         r = (blurLevel + acr) / (100 + acr)
-        r = r < 0.45 and 0.45
         h, w, c = image.shape
         dim = (int(w*r), int(h*r))
         image = cv2.resize(image, dim)
