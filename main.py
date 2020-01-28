@@ -121,7 +121,7 @@ def run_multiple(input_dir, output_dir):
 
     for f in os.listdir(input_dir):
         if f.lower().endswith(valid_images):
-            imgfiles.append(os.path.join(in_dir, f))
+            imgfiles.append(os.path.join(input_dir, f))
     for in_img in imgfiles:
         print("processing image: " + in_img + "\n")
         filename, file_extension = os.path.splitext(in_img)  # get file parts
