@@ -51,7 +51,7 @@ def get_model(model_name="srresnet"):
     elif model_name == "unet":
         return get_unet_model(out_ch=3)
     else:
-        raise ValueError("model_name should be 'srresnet'or 'unet'")
+        raise ValueError("model_name should be 'srresnet' or 'unet'")
 
 
 # SRResNet
