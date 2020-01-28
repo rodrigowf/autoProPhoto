@@ -11,17 +11,17 @@ from esrgan.main import Esrgan
 in_dir = './_input/'
 out_dir = "./_output/"  # output directory
 
-wb_model = WB()
-wb = wb_model.run  # função!!
-
-denoiser = DeNoiser()
-denoise = denoiser.run
-
-enhancer = NeuralEnhancer()
-enhance = enhancer.process
-
-grower = Esrgan()
-grow = grower.run
+# wb_model = WB()
+# wb = wb_model.run  # função!!
+#
+# denoiser = DeNoiser()
+# denoise = denoiser.run
+#
+# enhancer = NeuralEnhancer()
+# enhance = enhancer.process
+#
+# grower = Esrgan()
+# grow = grower.run
 
 
 def gamma(img):
@@ -50,7 +50,7 @@ def antiblur(image):
     print(blurLevel)
     if blurLevel < 100:
         print('blurred! correcting....')
-        acr = 0
+        acr = 30
         r = (blurLevel + acr) / (100 + acr)
         r = r < 0.45 and 0.45
         h, w, c = image.shape
@@ -60,19 +60,51 @@ def antiblur(image):
 
 
 def process_batch(imgs):
-    # workflow 1 begins here for each image:
-    print('Iniciando procesamento...')
-    out1 = [wb(img) for img in imgs]
-    print('Aplicada correção de cor...')
+
+    # workflow 1 begins here for each batch:
+
+    print('Iniciando procesamento ...')
+    wb = WB()
+    out1 = [wb.run(img) for img in imgs]
+    del wb
+
+    print('Aplicada correção de cor ...')
     out2 = [gamma(img) for img in out1]
+    del out1
+
+    denoiser = DeNoiser()
     print('Aplicado ajuste de contraste (e cor) ...')
-    out3 = [denoise(img) for img in out2]
-    print('Fim do processamento! salvando...')
+    out3 = [denoiser.run(img) for img in out2]
+    del denoiser
+    del out2
 
-    return out3
+    print('Aplicado anti blur ...')
+    out4 = [antiblur(img) for img in out3]
+    del out3
+
+    print('Aplicado ampliação ...')
+    grower = Esrgan()
+    out5 = [grower.run(img) for img in out4]
+    del grower
+    del out4
+
+    print('Aplicado correção de artefatos ...')
+    enhancer = NeuralEnhancer()
+    out6 = [enhancer.process(img) for img in out5]
+    del enhancer
+    del out5
+
+    print('Aplicado ultima correçãozinha de cores...')
+    wb = WB()
+    out7 = [wb(img) for img in out6]
+    del wb
+    del out6
+
+    print('Fim do processamento! salvando ...')
+    return out7
 
 
-def run_batch(input_dir):
+def run_batch(input_dir, output_dir):
     imgs = []
     names = []
     valid_images = (".jpg", ".jpeg", ".png")
@@ -89,8 +121,10 @@ def run_batch(input_dir):
 
     i = 0
     for img in results:
-        cv2.imwrite(out_dir + '/' + names[i], img)  # save it
+        cv2.imwrite(output_dir + '/' + names[i], img)  # save it
         i = i+1
+
+    print('tudo salvo! vá na paz!!')
 
 
 def process_image(img):
