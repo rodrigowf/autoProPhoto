@@ -63,13 +63,13 @@ def process_batch(imgs):
     out2 = [gamma(img) for img in out1]
     del out1
 
-    print('Aplicado ajuste de contraste (e cor) ...')
+    print('Removendo ruido ...')
     denoiser = DeNoiser()
     out3 = [denoiser.run(img) for img in out2]
     del denoiser
     del out2
 
-    print('Aplicado anti blur ...')
+    print('Removendo blur ...')
     out4 = [antiblur(img) for img in out3]
     del out3
 
