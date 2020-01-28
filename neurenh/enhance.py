@@ -16,45 +16,32 @@
 
 __version__ = '0.3'
 
-import io
 import os
 import sys
 import bz2
-import cv2
-import glob
-import math
-import time
 import pickle
-import random
-import argparse
 import itertools
-import threading
 import collections
 from PIL import Image
-# Scientific & Imaging Libraries
 import numpy as np
 import scipy.ndimage, scipy.misc
-
-# Numeric Computing (GPU)
-import theano, theano.tensor as T
-
-# Deep Learning Framework
-import lasagne
+import theano, theano.tensor as T  # Numeric Computing (GPU)
+import lasagne  # Deep Learning Framework
 from lasagne.layers import Conv2DLayer as ConvLayer, Deconv2DLayer as DeconvLayer, Pool2DLayer as PoolLayer
 from lasagne.layers import InputLayer, ConcatLayer, ElemwiseSumLayer, batch_norm
 
-# Support ansi colors in Windows too.
 if sys.platform == 'win32':
-    import colorama
+    import colorama  # Support ansi colors in Windows too.
 
 T.nnet.softminus = lambda x: x - T.nnet.softplus(x)
 
 
 class args:
-    device = 'cpu'             # Name of the CPU/GPU to use, for Theano.
-    type = 'photo'                 # Name of the neural network to load/save.
-    model = 'default'              # Specific trained version of the model.
-    zoom = 2                       # Resolution increase factor for inference.
+    device = 'cpu'      # Name of the CPU/GPU to use, for Theano.
+
+    type = 'photo'      # Name of the neural network to load/save.
+    model = 'repair'    # Specific trained version of the model.
+    zoom = 1            # Resolution increase factor for inference.
 
     rendering_tile = 80            # Size of tiles used for rendering images.
     rendering_overlap = 24         # Number of pixels padding around each tile.
@@ -214,6 +201,13 @@ class Model(object):
             for p, v in zip(l.get_params(), params[k]):
                 assert v.shape == p.get_value().shape, "Mismatch in number of parameters for layer {}.".format(k)
                 p.set_value(v.astype(np.float32))
+
+    def compile(self):
+        # Helper function for rendering test images during training, or standalone inference mode.
+        input_tensor, seed_tensor = T.tensor4(), T.tensor4()
+        input_layers = {self.network['img']: input_tensor, self.network['seed']: seed_tensor}
+        output = lasagne.layers.get_output([self.network[k] for k in ['seed','out']], input_layers, deterministic=True)
+        self.predict = theano.function([seed_tensor], output)
 
 
 class NeuralEnhancer(object):

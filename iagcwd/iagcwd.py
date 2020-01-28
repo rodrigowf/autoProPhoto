@@ -1,9 +1,5 @@
 import cv2
-import glob
-import argparse
 import numpy as np
-from matplotlib import pyplot as plt
-from scipy.linalg import fractional_matrix_power
 
 
 def image_agcwd(img, a=0.25, truncated_cdf=False):
@@ -54,7 +50,7 @@ def run(img):
     YCrCb = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
     Y = YCrCb[:, :, 0]
     # Determine whether image is bright or dimmed
-    threshold = 0.1
+    threshold = 0.6
     exp_in = 83  # Expected global average intensity
     M, N = img.shape[:2]
     mean_in = np.sum(Y / (M * N))
