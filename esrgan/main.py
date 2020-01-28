@@ -5,7 +5,7 @@ from . import RRDBNet_arch as arch
 
 class Esrgan:
     def __init__(self):
-        model_path = 'esrgan/models/RRDB_ESRGAN_x4.pth'  # models/RRDB_ESRGAN_x4.pth OR models/RRDB_PSNR_x4.pth
+        model_path = 'esrgan/models/interp_08.pth'  # models/RRDB_ESRGAN_x4.pth OR models/RRDB_PSNR_x4.pth
         # self.device = torch.device('cuda')  # if you want to run on CPU, change 'cuda' -> cpu
         self.device = torch.device('cuda')
 

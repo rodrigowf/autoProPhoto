@@ -5,8 +5,8 @@ from .model import get_model
 class DeNoiser:
 
     def __init__(self):
-        weight_file = 'n2n/weights.040-87.447-29.13496_gauss_noise.hdf5'  # esse aqui mostrou results melhores
-        # weight_file = 'n2n/weights.056-66.803-30.57923_gauss_clean.hdf5'  # trained weight file
+        # weight_file = 'n2n/weights.040-87.447-29.13496_gauss_noise.hdf5'  # esse aqui mostrou results melhores
+        weight_file = 'n2n/weights.056-66.803-30.57923_gauss_clean.hdf5'  # trained weight file
         self.model = get_model("srresnet")  # model architecture ('srresnet' or 'unet')
         self.model.load_weights(weight_file)
 
