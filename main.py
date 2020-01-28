@@ -79,23 +79,23 @@ def process_batch(imgs):
     del grower
     del out4
 
-    print('Aplicado correção de artefatos ...')
-    # enhancer = NeuralEnhancer()
-    # out6 = [enhancer.process(img) for img in out5]
-    # del enhancer
-    denoiser = DeNoiser()
-    out6 = [denoiser.run(img) for img in out5]
-    del denoiser
-    del out5
-
-    print('Aplicado ultima correçãozinha de cores ...')
-    wb = WB()
-    out7 = [wb.run(img) for img in out6]
-    del wb
-    del out6
+    # print('Aplicado correção de artefatos ...')
+    # # enhancer = NeuralEnhancer()
+    # # out6 = [enhancer.process(img) for img in out5]
+    # # del enhancer
+    # denoiser = DeNoiser()
+    # out6 = [denoiser.run(img) for img in out5]
+    # del denoiser
+    # del out5
+    #
+    # print('Aplicado ultima correçãozinha de cores ...')
+    # wb = WB()
+    # out7 = [wb.run(img) for img in out6]
+    # del wb
+    # del out6
 
     print('Fim do processamento! salvando ...')
-    return out7
+    return out5
 
 
 def run_batch(input_dir, output_dir):
@@ -142,17 +142,22 @@ def clean_all_libs():
 
 def process_image(img):
     # workflow 1 begins here for each image:
+    print('white balance ........')
     out1 = wb.run(img)
+    print('gamma ........')
     out2 = gamma(out1)
+    print('denoising ........')
     out3 = denoiser.run(out2)
+    print('antiblur ........')
     out4 = antiblur(out3)
     print('crescendo ........')
     out5 = grower.run(out4)
-    print('denoising ........')
-    out6 = denoiser.run(out5)
+    # print('denoising ........')
+    # out6 = denoiser.run(out5)
+    # print('white balance ........')
+    # out7 = wb.run(out6)
     print('feito!')
-    out7 = wb.run(out6)
-    return out7
+    return out5
 
 
 def run_single(in_path, out_dir):
