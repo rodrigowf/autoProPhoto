@@ -37,11 +37,11 @@ T.nnet.softminus = lambda x: x - T.nnet.softplus(x)
 
 
 class args:
-    device = 'cuda'   # cuda0  ??   # Name of the CPU/GPU to use, for Theano.
+    device = 'gpu0'   # cuda0  ??   # Name of the CPU/GPU to use, for Theano.
 
     type = 'photo'      # Name of the neural network to load/save.
-    model = 'repair'    # Specific trained version of the model.
-    zoom = 1            # Resolution increase factor for inference.
+    model = 'default'  # 'repair'    # Specific trained version of the model.
+    zoom = 2            # Resolution increase factor for inference.
 
     rendering_tile = 80            # Size of tiles used for rendering images.
     rendering_overlap = 24         # Number of pixels padding around each tile.

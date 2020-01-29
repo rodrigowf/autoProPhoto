@@ -5,7 +5,7 @@ import numpy as np
 from skimage import exposure, util
 from wbsrgb.wbsrg import WB
 from n2n.denoiser import DeNoiser
-# from neurenh.enhance import NeuralEnhancer
+from neurenh.enhance import NeuralEnhancer
 from esrgan.main import Esrgan
 
 
@@ -35,17 +35,28 @@ def antiblur(image):
     print(blurLevel)
     if blurLevel < 100:
         print('blurred! correcting....')
-        acr = 0
-        if blurLevel < 30:
-            acr = 60
-        elif blurLevel < 50:
-            acr = 30
-
+        acr = 30
+        # if blurLevel < 30:
+        #     acr = 40
+        # elif blurLevel < 50:
+        #     acr = 20
         r = (blurLevel + acr) / (100 + acr)
         h, w, c = image.shape
         dim = (int(w*r), int(h*r))
         image = cv2.resize(image, dim)
     return image
+
+
+def grow(image):
+    h, w, c = image.shape
+    higher_dim = max(h, w)
+    if higher_dim < 700:
+        result = grower4.run(image)
+    elif higher_dim < 1200:
+        result = grower2.process(image)
+    else:
+        result = image
+    return result
 
 
 # ----------------------------------------------------
@@ -74,25 +85,14 @@ def process_batch(imgs):
     del out3
 
     print('Aplicado ampliação ...')
-    grower = Esrgan()
-    out5 = [grower.run(img) for img in out4]
-    del grower
+    global grower2
+    global grower4
+    grower2 = NeuralEnhancer()
+    grower4 = Esrgan()
+    out5 = [grow(img) for img in out4]
+    del grower2
+    del grower4
     del out4
-
-    # print('Aplicado correção de artefatos ...')
-    # # enhancer = NeuralEnhancer()
-    # # out6 = [enhancer.process(img) for img in out5]
-    # # del enhancer
-    # denoiser = DeNoiser()
-    # out6 = [denoiser.run(img) for img in out5]
-    # del denoiser
-    # del out5
-    #
-    # print('Aplicado ultima correçãozinha de cores ...')
-    # wb = WB()
-    # out7 = [wb.run(img) for img in out6]
-    # del wb
-    # del out6
 
     print('Fim do processamento! salvando ...')
     return out5
@@ -124,20 +124,20 @@ def run_batch(input_dir, output_dir):
 def load_all_libs():
     global wb
     global denoiser
-    global grower
-    # global enhancer
+    global grower2
+    global grower4
 
     wb = WB()
     denoiser = DeNoiser()
-    grower = Esrgan()
-    # enhancer = NeuralEnhancer()
+    grower2 = NeuralEnhancer()
+    grower4 = Esrgan()
 
 
 def clean_all_libs():
     del wb
     del denoiser
-    del grower
-    # del enhancer
+    del grower2
+    del grower4
 
 
 def process_image(img):
@@ -151,11 +151,7 @@ def process_image(img):
     print('antiblur ........')
     out4 = antiblur(out3)
     print('crescendo ........')
-    out5 = grower.run(out4)
-    # print('denoising ........')
-    # out6 = denoiser.run(out5)
-    # print('white balance ........')
-    # out7 = wb.run(out6)
+    out5 = grow(out4)
     print('feito!')
     return out5
 
