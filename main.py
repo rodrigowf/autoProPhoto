@@ -50,9 +50,9 @@ def antiblur(image):
 def grow(image):
     h, w, c = image.shape
     higher_dim = max(h, w)
-    if higher_dim < 700:
+    if higher_dim < 750:
         result = grower4.run(image)
-    elif higher_dim < 1200:
+    elif higher_dim < 1300:
         result = grower2.process(image)
     else:
         result = image
@@ -111,7 +111,7 @@ def run_batch(input_dir, output_dir):
             imgs.append(img)
             names.append(os.path.basename(filename)+file_extension)
 
-    results = process_batch(imgs)
+    results = process_batch(imgs)  # aqui q toda a mágica acontece! ;)
 
     i = 0
     for img in results:
@@ -187,5 +187,4 @@ def run_multiple(input_dir, output_dir):
 
 # in_dir = './_input/'
 # out_dir = "./_output/"  # output directory
-
 # run_multiple(in_dir, out_dir)
