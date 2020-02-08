@@ -40,7 +40,7 @@ class args:
     device = 'gpu0'   # cuda0  ??   # Name of the CPU/GPU to use, for Theano.
 
     type = 'photo'      # Name of the neural network to load/save.
-    model = 'default'  # 'repair'    # Specific trained version of the model.
+    model = 'default'   # 'repair'    # Specific trained version of the model.
     zoom = 2            # Resolution increase factor for inference.
 
     rendering_tile = 80            # Size of tiles used for rendering images.
@@ -119,10 +119,14 @@ class SubpixelReshuffleLayer(lasagne.layers.Layer):
 
 class Model(object):
 
-    def __init__(self):
+    def __init__(self, type, model, zoom):
         self.network = collections.OrderedDict()
         self.network['img'] = InputLayer((None, 3, None, None))
         self.network['seed'] = InputLayer((None, 3, None, None))
+
+        self.type = type
+        self.model = model
+        self.zoom = zoom
 
         config, params = self.load_model()
         self.setup_generator(self.last_layer(), config)
@@ -183,7 +187,7 @@ class Model(object):
             yield (name, l)
 
     def get_filename(self, absolute=False):
-        filename = 'ne%ix-%s-%s-%s.pkl.bz2' % (args.zoom, args.type, args.model, __version__)
+        filename = 'ne%ix-%s-%s-%s.pkl.bz2' % (self.zoom, self.type, self.model, __version__)
         return os.path.join(os.path.dirname(__file__), filename) if absolute else filename
 
     def load_model(self):
@@ -212,8 +216,8 @@ class Model(object):
 
 class NeuralEnhancer(object):
 
-    def __init__(self):
-        self.model = Model()
+    def __init__(self, type, model, zoom):
+        self.model = Model(type, model, zoom)
 
     def imsave(self, fn, img):
         Image.fromarray(np.transpose(img + 0.5, (1, 2, 0)).clip(0.0, 1.0) * 255.0).save(fn)

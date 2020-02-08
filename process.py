@@ -35,11 +35,7 @@ def antiblur(image):
     print(blurLevel)
     if blurLevel < 100:
         print('blurred! correcting....')
-        acr = 30
-        # if blurLevel < 30:
-        #     acr = 40
-        # elif blurLevel < 50:
-        #     acr = 20
+        acr = 15
         r = (blurLevel + acr) / (100 + acr)
         h, w, c = image.shape
         dim = (int(w*r), int(h*r))
@@ -87,15 +83,24 @@ def process_batch(imgs):
     print('Aplicado ampliação ...')
     global grower2
     global grower4
-    grower2 = NeuralEnhancer()
+    grower2 = NeuralEnhancer('photo', 'default', 2)
     grower4 = Esrgan()
     out5 = [grow(img) for img in out4]
     del grower2
     del grower4
     del out4
 
+    print('Removendo ruido pela 2a vez...')
+    denoiser2 = NeuralEnhancer('photo', 'repair', 1)
+    out6 = [denoiser2.process(img) for img in out5]
+    del denoiser2
+    del out5
+
+    # TODO aplicar mais um denoiser aqui depois de ampliar! ;)
+    # instanciar denovo o neural enhancer passando o outro modelo (de restauração) como parametro!
+
     print('Fim do processamento! salvando ...')
-    return out5
+    return out6
 
 
 def run_batch(input_dir, output_dir):
