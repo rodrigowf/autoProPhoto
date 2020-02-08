@@ -35,7 +35,7 @@ def antiblur(image):
     print(blurLevel)
     if blurLevel < 100:
         print('blurred! correcting....')
-        acr = 15
+        acr = 20
         r = (blurLevel + acr) / (100 + acr)
         h, w, c = image.shape
         dim = (int(w*r), int(h*r))
