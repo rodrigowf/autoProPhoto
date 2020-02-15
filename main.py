@@ -9,11 +9,8 @@ from flask_session import Session
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-from oauth2client.client import GoogleCredentials
 
-# import drive_process
+from drive_process import ProcessThread
 
 
 drive_redirect = 'http://localhost:3000/drive'
@@ -24,9 +21,9 @@ CLIENT_SECRETS_FILE = "./client_secret.json"
 
 # This OAuth 2.0 access scope allows for full read/write access to the
 # authenticated user's account and requires requests to use an SSL connection.
-SCOPES = ['https://www.googleapis.com/auth/drive.metadata']
+SCOPES = ['https://www.googleapis.com/auth/drive.metadata', 'https://www.googleapis.com/auth/drive']
 API_SERVICE_NAME = 'drive'
-API_VERSION = 'v2'
+API_VERSION = 'v3'
 
 app = flask.Flask(__name__)
 app.secret_key = b'5oZW6\n$#^#3w3FE3'
@@ -41,9 +38,61 @@ cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 
+class RunningStatus:
+    def __init__(self):
+        self.running = False
+        self.folder_name = ''
+        self.files_list = []
+        self.current_file = 0
+        self.progress = 0
+        self.my_thread_id = 0
+        self.cancel_signal = False
+
+
 @app.route('/')
 def index():
     return print_index_table()
+
+
+@app.route('/filelist')
+def get_fileslist():
+    if 'status' not in flask.session:
+        return flask.jsonify({'running': 'False'})
+
+    status = flask.session['status']
+    return flask.jsonify({'running': 'True',
+                          'folder_name': status.folder_name,
+                          'files_list': status.files_list})
+
+
+@app.route('/status')
+def get_status():
+    if 'status' not in flask.session:
+        return flask.jsonify({'running': 'False'})
+
+    status = flask.session['status']
+
+    if not status.running:
+        flask.session.pop('status', None)
+        return flask.jsonify({'running': 'False'})
+
+    return flask.jsonify({'running': 'True',
+                          'current_file': status.current_file,
+                          'progress': status.progress})
+
+
+@app.route('/cancel')
+def cancel_processing():
+    if 'status' not in flask.session:
+        return flask.jsonify({'running': 'False'})
+
+    status = flask.session['status']
+    status.cancel_signal = True
+    ProcessThread.threads[status.my_thread_id].join()
+    del status
+    flask.session.pop('status', None)
+    return flask.jsonify({'running': 'False',
+                          'done': 'True'})
 
 
 @app.route('/process_folder/<folder_id>')
@@ -52,19 +101,27 @@ def process_folder(folder_id):
     if 'credentials' not in flask.session:
         return flask.redirect('authorize')
 
+    if 'status' in flask.session and flask.session['status'].running is True:
+        return flask.jsonify({'running': 'True'})
+
     # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(
       **flask.session['credentials'])
 
-    credentials_drive = credentials_to_drive(flask.session['credentials'])
-    result = drive_process.process_folder(credentials_drive, folder_id)
+    status = RunningStatus()
+    flask.session['status'] = status
+
+    # Create and start the thread that process all the selected folder
+    thread = ProcessThread(credentials, folder_id, status)
+    thread.start() # aqui q ele faz status.running = True
+
 
     # Save credentials back to session in case access token was refreshed.
     # ACTION ITEM: In a production app, you likely want to save these
     #              credentials in a persistent database instead.
     flask.session['credentials'] = credentials_to_dict(credentials)
 
-    return result
+    return flask.jsonify({'running': 'True'})
 
 
 @app.route('/drive')
@@ -74,32 +131,26 @@ def drive_list():
     if 'credentials' not in flask.session:
         return flask.redirect('authorize')
 
+    if 'status' in flask.session and flask.session['status'].running == True:
+        return flask.jsonify({'running': 'True'})
+
     # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(
       **flask.session['credentials'])
 
-    # lista com tudo que tem no Drive
-    #
-    # drive = googleapiclient.discovery.build(
-    #   API_SERVICE_NAME, API_VERSION, credentials=credentials)
-    # 
-    # files = drive.files().list().execute()
+    drive = googleapiclient.discovery.build(
+      API_SERVICE_NAME, API_VERSION, credentials=credentials)
 
-    credentials_drive = credentials_to_drive(flask.session['credentials'])
-    gauth = GoogleAuth()
-    gauth.credentials = GoogleCredentials(**credentials_drive)
-    drive = GoogleDrive(gauth)
-
-    # Lista todas as páginas na raiz do drive
-    file_list = drive.ListFile(
-        {'q': "'root' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'"}).GetList()
+    files_ret = drive.files().list(q="'root' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'").execute()
+    file_list = files_ret['files']
 
     # Save credentials back to session in case access token was refreshed.
     # ACTION ITEM: In a production app, you likely want to save these
     #              credentials in a persistent database instead.
     flask.session['credentials'] = credentials_to_dict(credentials)
 
-    return flask.jsonify(file_list)
+    return flask.jsonify({'running': 'False',
+                          'list': file_list})
 
 
 @app.route('/authorize')

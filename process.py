@@ -126,42 +126,89 @@ def run_batch(input_dir, output_dir):
     print('tudo salvo! vá na paz!!')
 
 
+# -------------------------
+
+
 def load_all_libs():
     global wb
     global denoiser
+    global denoiser2
     global grower2
     global grower4
 
     wb = WB()
     denoiser = DeNoiser()
-    grower2 = NeuralEnhancer()
+    denoiser2 = NeuralEnhancer('photo', 'repair', 1)
+    grower2 = NeuralEnhancer('photo', 'default', 2)
     grower4 = Esrgan()
 
 
 def clean_all_libs():
     del wb
     del denoiser
+    del denoiser2
     del grower2
     del grower4
 
 
-def process_image(img):
+def process_image(img, status):
     # workflow 1 begins here for each image:
     print('white balance ........')
+    status.progress = 0
     out1 = wb.run(img)
+    if status.cancel_signal:
+        return False
     print('gamma ........')
+    status.progress = 20
     out2 = gamma(out1)
+    if status.cancel_signal:
+        return False
     print('denoising ........')
+    status.progress = 30
     out3 = denoiser.run(out2)
+    if status.cancel_signal:
+        return False
     print('antiblur ........')
+    status.progress = 40
     out4 = antiblur(out3)
+    if status.cancel_signal:
+        return False
     print('crescendo ........')
+    status.progress = 50
     out5 = grow(out4)
+    if status.cancel_signal:
+        return False
+    print('Denoisinng pela 2a vez .....')
+    status.progress = 75
+    out6 = denoiser2.process(out5)
+    if status.cancel_signal:
+        return False
     print('feito!')
-    return out5
+    status.progress = 100
+    return out6
 
 
-def run_single(in_path, out_dir):
+def run_array(input_arr, status):
+    # load_all_libs()
+
+    if status.cancel_signal:
+        return False
+
+    out_arr = []
+    for img_id, img in enumerate(input_arr):
+        if status.cancel_signal:
+            return False
+        print('Processing image %d from %d' % (img_id, len(input_arr)))
+        status.current_file = img_id
+        out_arr.append(process_image(img, status))
+
+    if status.cancel_signal:
+        return False
+
+    return out_arr
+
+
+def run_file(in_path, out_dir):
     load_all_libs()
 
     filename = os.path.basename(in_path)
@@ -171,7 +218,7 @@ def run_single(in_path, out_dir):
     cv2.imwrite(out_dir + '/' + filename, outImg)  # save it
 
 
-def run_multiple(input_dir, output_dir):
+def run_folder(input_dir, output_dir):
     load_all_libs()
 
     imgfiles = []
@@ -189,7 +236,4 @@ def run_multiple(input_dir, output_dir):
                     + file_extension, outImg)  # save it
 
 
-
-# in_dir = './_input/'
-# out_dir = "./_output/"  # output directory
-# run_multiple(in_dir, out_dir)
+load_all_libs()

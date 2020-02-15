@@ -1,64 +1,144 @@
-import os
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-from oauth2client.client import GoogleCredentials
+import io
+import cv2
+import numpy as np
+import threading
+import googleapiclient.discovery
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+
 import process
 
+SCOPES = ['https://www.googleapis.com/auth/drive.metadata', 'https://www.googleapis.com/auth/drive']
+API_SERVICE_NAME = 'drive'
+API_VERSION = 'v3'
 
-def process_folder(credentials, folder_id):
-    gauth = GoogleAuth()
-    gauth.credentials = GoogleCredentials(**credentials)
-    drive = GoogleDrive(gauth)
 
-    local_input_parent = './user_uploads'
-    local_results_parent = './user_results'
+class ProcessThread (threading.Thread):
+    ids_count = 0
+    threads = []
 
-    # TODO incluir no nome dessas pastas id do usuario e datetime (credenciais)
-    local_input_folder = local_input_parent + '/' + folder_id
-    local_result_folder = local_results_parent + '/' + folder_id
+    def __init__(self, credentials, folder_id, status):
+        threading.Thread.__init__(self)
+        self.threadID = ProcessThread.ids_count
+        self.running = False
+        self.status = status
+        self.status.my_thread_id = self.threadID
+        self.credentials = credentials
+        self.folder_id = folder_id
+        ProcessThread.ids_count += 1
+        ProcessThread.threads.append(self)
 
-    os.makedirs(local_input_folder, exist_ok=True)  # verifica se a pasta de saida realmente existe
-    os.makedirs(local_result_folder, exist_ok=True)  # verifica se a pasta de saida realmente existe
-    # deletar essas pastas depois de salvar de volta no drive!
+    def run(self):
+        print("Starting thread number %d" % self.threadID)
+        self.running = True
+        self.status.running = True
+        process_folder(self.credentials, self.folder_id, self.status)
+        self.running = False
+        self.status.running = False
+        print("Exiting  thread number %d" % self.threadID)
 
-    # Pegar nome da pasta de origem a partir do ID dela
-    drive_input_folder = drive.CreateFile({'id': folder_id})
-    drive_input_folder.FetchMetadata(fields='title')
-    original_folder_name = drive_input_folder['title']
+
+def process_folder(credentials, folder_id, status):
+
+    drive = googleapiclient.discovery.build(
+        API_SERVICE_NAME, API_VERSION, credentials=credentials)
+
+    # Get Folder name from ID
+    request_folder_name = drive.files().get(fileId=folder_id).execute()
+    original_folder_name = request_folder_name['name']
 
     print('folder_name = '+original_folder_name)
     print('Downloading user chosen files....')
 
-    # Pega todos os arquivos da pasta escolhida no Drive
-    file_list = drive.ListFile({'q': "'%s' in parents and trashed=false" % folder_id}).GetList()
-    for file1 in file_list:
-        print('title: %s, id: %s' % (file1['title'], file1['id']))
+    if status.cancel_signal:
+        return False
 
-        # Initialize GoogleDriveFile instance with file id.
-        file_in = drive.CreateFile({'id': file1['id']})
-        file_in.GetContentFile(local_input_folder + '/' + file1['title'])  # get content of the file to local folder
+    arr_files = []
+
+    # Pega todos os arquivos da pasta escolhida no Drive
+    file_list_return = drive.files().list(q="'%s' in parents and trashed=false" % folder_id).execute()
+    file_list = file_list_return['files']
+
+    print('lista de arquivos:')
+    print(file_list)
+
+    if status.cancel_signal:
+        return False
+
+    status.files_list = file_list
+    status.folder_name = original_folder_name
+
+    for file in file_list:
+        print('baixando arquivo:')
+        print('title: %s, id: %s' % (file['name'], file['id']))
+
+        request = drive.files().get_media(fileId=file['id'])
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+            print("Download %d %%." % int(status.progress() * 100))
+
+        if status.cancel_signal:
+            return False
+
+        nparr = np.fromstring(fh.getvalue(), np.uint8)
+        img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        img = np.flip(img_np, 2)
+
+        file_name = file['name'].split('.')[0]
+
+        arr_files.append([file_name, img])
 
     print('Imagens baixadas, preparado para rodar..')
 
+    if status.cancel_signal:
+        return False
+
+    # -----------------------
+
     # AQUI são processados todos os arquivos, uma vez que ele já foram jogados na pasta local
-    process.run_batch(local_input_folder, local_result_folder)
+
+    result_arr = process.run_array(arr_files, status)
+    # result_arr = arr_files
+
+    # -----------------------
+
+    if status.cancel_signal:
+        return False
 
     print('Processamento de imagens concluído!')
 
-    # cria pasta no Drive onde serão jogados todos os arquivos de resultado
+    print('Jogando de volta pro drive...!')
+
     result_folder_name = original_folder_name+'_restaurado'
-    drive_result_folder_metadata = {'title': result_folder_name, 'mimeType': 'application/vnd.google-apps.folder'}
-    drive_result_folder = drive.CreateFile(drive_result_folder_metadata)
-    drive_result_folder.Upload()
-    drive_result_folder_id = drive_result_folder['id']
+    result_folder_metadata = {
+        'name': result_folder_name,
+        'mimeType': 'application/vnd.google-apps.folder'
+    }
+    result_folder = drive.files().create(body=result_folder_metadata,
+                                         fields='id').execute()
+    result_folder_id = result_folder.get('id')
+
+    print('Criada pasta no drive: Folder ID: %s' % result_folder_id)
+
+    if status.cancel_signal:
+        return False
 
     # joga todos os arquivos de resultado de volta no Drive
-    for f in os.listdir(local_result_folder):
-        file_path = os.path.join(local_result_folder, f)
-        file1 = drive.CreateFile(
-             metadata={"title": f, "parents": [{"kind": "drive#fileLink", "id": drive_result_folder_id}]})
-        file1.SetContentFile(file_path)
-        file1.Upload()
+    for [name, image] in result_arr:
+        file_metadata = {
+            'name': name+'.png',
+            'parents': [result_folder_id]
+        }
+        img_np = np.flip(image, 2)
+        is_success, img_enc = cv2.imencode(".png", img_np, [cv2.IMWRITE_PNG_COMPRESSION, 0])
+        fh = io.BytesIO(img_enc)
+        media = MediaIoBaseUpload(fh, mimetype='image/png', resumable=True)
+        file = drive.files().create(body=file_metadata,
+                                    media_body=media,
+                                    fields='id').execute()
+        print('File name: %s ; ID: %s' % (name, file.get('id')))
 
     print('Todas as imagens salvas no Drive !')
 
