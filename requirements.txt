@@ -1,4 +1,5 @@
 Flask
+numpy
 Keras
 colorama
 requests
