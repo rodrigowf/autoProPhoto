@@ -5,7 +5,7 @@ import threading
 import googleapiclient.discovery
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
-import process
+# import process
 
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata', 'https://www.googleapis.com/auth/drive']
 API_SERVICE_NAME = 'drive'
@@ -99,8 +99,8 @@ def process_folder(credentials, folder_id, status):
 
     # AQUI são processados todos os arquivos, uma vez que ele já foram jogados na pasta local
 
-    result_arr = process.run_array(arr_files, status)
-    # result_arr = arr_files
+    # result_arr = process.run_array(arr_files, status)
+    result_arr = arr_files
 
     # -----------------------
 

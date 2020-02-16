@@ -38,6 +38,14 @@ cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 
+def addHeaders(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add("Access-Control-Allow-Headers", "Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
+    response.headers.add("Content-Type", "application/json;charset=UTF-8")
+    return response
+
+
 class RunningStatus:
     def __init__(self):
         self.running = False
@@ -60,9 +68,11 @@ def get_fileslist():
         return flask.jsonify({'running': 'False'})
 
     status = flask.session['status']
-    return flask.jsonify({'running': 'True',
-                          'folder_name': status.folder_name,
-                          'files_list': status.files_list})
+
+    response = flask.jsonify({'running': 'True',
+                              'folder_name': status.folder_name,
+                              'files_list': status.files_list})
+    return addHeaders(response)
 
 
 @app.route('/status')
@@ -76,9 +86,10 @@ def get_status():
         flask.session.pop('status', None)
         return flask.jsonify({'running': 'False'})
 
-    return flask.jsonify({'running': 'True',
-                          'current_file': status.current_file,
-                          'progress': status.progress})
+    response = flask.jsonify({'running': 'True',
+                              'current_file': status.current_file,
+                              'progress': status.progress})
+    return addHeaders(response)
 
 
 @app.route('/cancel')
@@ -91,8 +102,9 @@ def cancel_processing():
     ProcessThread.threads[status.my_thread_id].join()
     del status
     flask.session.pop('status', None)
-    return flask.jsonify({'running': 'False',
-                          'done': 'True'})
+    response = flask.jsonify({'running': 'False',
+                              'done': 'True'})
+    return addHeaders(response)
 
 
 @app.route('/process_folder/<folder_id>')
@@ -102,7 +114,7 @@ def process_folder(folder_id):
         return flask.redirect('authorize')
 
     if 'status' in flask.session and flask.session['status'].running is True:
-        return flask.jsonify({'running': 'True'})
+        return addHeaders(flask.jsonify({'running': 'True'}))
 
     # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(
@@ -121,7 +133,7 @@ def process_folder(folder_id):
     #              credentials in a persistent database instead.
     flask.session['credentials'] = credentials_to_dict(credentials)
 
-    return flask.jsonify({'running': 'True'})
+    return addHeaders(flask.jsonify({'running': 'True'}))
 
 
 @app.route('/drive')
@@ -132,7 +144,7 @@ def drive_list():
         return flask.redirect('authorize')
 
     if 'status' in flask.session and flask.session['status'].running == True:
-        return flask.jsonify({'running': 'True'})
+        return addHeaders(flask.jsonify({'running': 'True'}))
 
     # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(
@@ -149,8 +161,8 @@ def drive_list():
     #              credentials in a persistent database instead.
     flask.session['credentials'] = credentials_to_dict(credentials)
 
-    return flask.jsonify({'running': 'False',
-                          'list': file_list})
+    return addHeaders(flask.jsonify({'running': 'False',
+                                     'list': file_list}))
 
 
 @app.route('/authorize')
@@ -175,7 +187,7 @@ def authorize():
     # Store the state so the callback can verify the auth server response.
     flask.session['state'] = state
 
-    return authorization_url
+    return addHeaders(flask.jsonify(authorization_url))
 
 
 @app.route('/oauth2callback')
