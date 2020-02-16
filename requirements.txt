@@ -3,6 +3,12 @@ Keras
 colorama
 requests
 Flask-Cors
+Flask-Session
+google-api-python-client
+google-auth-oauthlib
+opencv-python
+scikit-image
+tensorflow
 pillow>=3.2.0
 Theano==0.8.2
 git+https://github.com/Lasagne/Lasagne.git@61b1ad1#egg=Lasagne==0.2-dev
