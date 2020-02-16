@@ -39,7 +39,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 
 
 def addHeaders(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
+    # response.headers.add('Access-Control-Allow-Origin', '*')
     response.headers.add("Access-Control-Allow-Headers", "Authorization")
     response.headers.add("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
     response.headers.add("Content-Type", "application/json;charset=UTF-8")
