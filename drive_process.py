@@ -7,7 +7,7 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
 # import process
 
-SCOPES = ['https://www.googleapis.com/auth/drive.metadata', 'https://www.googleapis.com/auth/drive']
+SCOPES = ['https://www.googleapis.com/auth/drive']
 API_SERVICE_NAME = 'drive'
 API_VERSION = 'v3'
 
