@@ -47,7 +47,7 @@ class RunningStatus:
         self.cancel_signal = False
 
 
-# @app.route('/')
+@app.route('/test')
 def index():
     return print_index_table()
 
