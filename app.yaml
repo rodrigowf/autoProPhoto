@@ -17,4 +17,4 @@ handlers:
 # ...
 
 vpc_access_connector:
-  name: "projects/refoto/locations/us-central1/connectors/memcachecon"
+  name: "projects/refotos/locations/us-central1/connectors/memcacheconnector"

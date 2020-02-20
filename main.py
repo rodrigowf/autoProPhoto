@@ -1,11 +1,6 @@
 # [START gae_python37_app]
 import flask
 import requests
-
-# from main import app
-# from gaesession import SessionModel
-
-# from flask_cors import CORS, cross_origin
 from flask_session import Session
 
 import google.oauth2.credentials
