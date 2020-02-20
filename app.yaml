@@ -3,7 +3,7 @@ runtime: python37
 
 handlers:
 # re-direct to index.html if frontend paths are given
-- url: /(|drive|status)
+- url: (/|/drive|/status)
   static_files: frontend/index.html
   upload: frontend/index.html
 # access the static resources
