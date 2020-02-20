@@ -11,7 +11,7 @@ handlers:
   static_files: frontend/static/\1
   upload: frontend/static/.*\.(gif|png|jpg|css|js)$
 # access the static resources
-- url: /static/(.*\.(gif|png|jpg|ico|css|js|json|txt))$
+- url: /(.*\.(gif|png|jpg|ico|css|js|json|txt))$
   static_files: frontend/\1
   upload: frontend/.*\.(gif|png|jpg|ico|css|js|json|txt)$
 # ...
