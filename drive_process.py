@@ -142,4 +142,6 @@ def process_folder(credentials, folder_id, status):
 
     print('Todas as imagens salvas no Drive !')
 
+    status.running = False
+
     return result_folder_name

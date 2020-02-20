@@ -3,7 +3,7 @@
 # [START gae_python37_app]
 import flask
 import requests
-from flask_cors import CORS, cross_origin
+# from flask_cors import CORS, cross_origin
 from flask_session import Session
 
 import google.oauth2.credentials
@@ -34,16 +34,8 @@ app.config.from_object(__name__)
 Session(app)
 
 # CORS - cross domain config
-cors = CORS(app, supports_credentials=True)
-app.config['CORS_HEADERS'] = 'Content-Type'
-
-
-def addHeaders(response):
-    # response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add("Access-Control-Allow-Headers", "Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
-    response.headers.add("Content-Type", "application/json;charset=UTF-8")
-    return response
+# cors = CORS(app, supports_credentials=True)
+# app.config['CORS_HEADERS'] = 'Content-Type'
 
 
 class RunningStatus:
@@ -57,25 +49,28 @@ class RunningStatus:
         self.cancel_signal = False
 
 
-@app.route('/')
+# @app.route('/')
 def index():
     return print_index_table()
 
 
-@app.route('/filelist')
+@app.route('/get_filelist')
 def get_fileslist():
     if 'status' not in flask.session:
         return flask.jsonify({'running': 'False'})
 
     status = flask.session['status']
 
-    response = flask.jsonify({'running': 'True',
-                              'folder_name': status.folder_name,
-                              'files_list': status.files_list})
-    return addHeaders(response)
+    if not status.running:
+        flask.session.pop('status', None)
+        return flask.jsonify({'running': 'False'})
+
+    return flask.jsonify({'running': 'True',
+                          'folder_name': status.folder_name,
+                          'files_list': status.files_list})
 
 
-@app.route('/status')
+@app.route('/get_status')
 def get_status():
     if 'status' not in flask.session:
         return flask.jsonify({'running': 'False'})
@@ -86,35 +81,36 @@ def get_status():
         flask.session.pop('status', None)
         return flask.jsonify({'running': 'False'})
 
-    response = flask.jsonify({'running': 'True',
-                              'current_file': status.current_file,
-                              'progress': status.progress})
-    return addHeaders(response)
+    return flask.jsonify({'running': 'True',
+                          'current_file': status.current_file,
+                          'progress': status.progress})
 
 
-@app.route('/cancel')
+@app.route('/cancel_processing')
 def cancel_processing():
     if 'status' not in flask.session:
-        return flask.jsonify({'running': 'False'})
+        return flask.jsonify({'running': 'False',
+                              'done': 'False'})
 
     status = flask.session['status']
     status.cancel_signal = True
     ProcessThread.threads[status.my_thread_id].join()
     del status
     flask.session.pop('status', None)
-    response = flask.jsonify({'running': 'False',
-                              'done': 'True'})
-    return addHeaders(response)
+    return flask.jsonify({'running': 'False',
+                          'done': 'True'})
 
 
 @app.route('/process_folder/<folder_id>')
 def process_folder(folder_id):
     # Check if it's logged in, if not, do it.
     if 'credentials' not in flask.session:
-        return flask.redirect('authorize')
+        return flask.redirect('do_authorize')
 
     if 'status' in flask.session and flask.session['status'].running is True:
-        return addHeaders(flask.jsonify({'running': 'True'}))
+        return flask.jsonify({'running': 'True'})
+    elif not flask.session['status'].running:
+        flask.session.pop('status', None)
 
     # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(
@@ -125,7 +121,7 @@ def process_folder(folder_id):
 
     # Create and start the thread that process all the selected folder
     thread = ProcessThread(credentials, folder_id, status)
-    thread.start() # aqui q ele faz status.running = True
+    thread.start()  # aqui q ele faz status.running = True
 
 
     # Save credentials back to session in case access token was refreshed.
@@ -133,18 +129,18 @@ def process_folder(folder_id):
     #              credentials in a persistent database instead.
     flask.session['credentials'] = credentials_to_dict(credentials)
 
-    return addHeaders(flask.jsonify({'running': 'True'}))
+    return flask.jsonify({'running': 'True'})
 
 
-@app.route('/drive')
+@app.route('/list_drive_files')
 def drive_list():
 
     # Check if it's logged in, if not, do it.
     if 'credentials' not in flask.session:
-        return flask.redirect('authorize')
+        return flask.redirect('do_authorize')
 
-    if 'status' in flask.session and flask.session['status'].running == True:
-        return addHeaders(flask.jsonify({'running': 'True'}))
+    if 'status' in flask.session and flask.session['status'].running is True:
+        return flask.jsonify({'running': 'True'})
 
     # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(
@@ -161,11 +157,11 @@ def drive_list():
     #              credentials in a persistent database instead.
     flask.session['credentials'] = credentials_to_dict(credentials)
 
-    return addHeaders(flask.jsonify({'running': 'False',
-                                     'list': file_list}))
+    return flask.jsonify({'running': 'False',
+                          'list': file_list})
 
 
-@app.route('/authorize')
+@app.route('/do_authorize')
 def authorize():
     # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
@@ -187,7 +183,7 @@ def authorize():
     # Store the state so the callback can verify the auth server response.
     flask.session['state'] = state
 
-    return addHeaders(flask.jsonify(authorization_url))
+    return authorization_url
 
 
 @app.route('/oauth2callback')
@@ -213,7 +209,7 @@ def oauth2callback():
     return flask.redirect(drive_redirect)
 
 
-@app.route('/revoke')
+@app.route('/revoke_credentials')
 def revoke():
     if 'credentials' not in flask.session:
         return ('You need to <a href="/authorize">authorize</a> before ' +
@@ -233,7 +229,7 @@ def revoke():
         return 'An error occurred.' + print_index_table()
 
 
-@app.route('/clear')
+@app.route('/clear_credentials')
 def clear_credentials():
     if 'credentials' in flask.session:
         del flask.session['credentials']
@@ -248,16 +244,6 @@ def credentials_to_dict(credentials):
             'client_id':        credentials.client_id,
             'client_secret':    credentials.client_secret,
             'scopes':           credentials.scopes}
-
-
-def credentials_to_drive(credentials_dict):
-    return {'access_token':     credentials_dict['token'],
-            'refresh_token':    credentials_dict['refresh_token'],
-            'token_uri':        credentials_dict['token_uri'],
-            'client_id':        credentials_dict['client_id'],
-            'client_secret':    credentials_dict['client_secret'],
-            'token_expiry':     None,
-            'user_agent':       'Python client library'}
 
 
 def print_index_table():

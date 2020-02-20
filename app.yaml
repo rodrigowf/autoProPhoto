@@ -1,2 +1,17 @@
-service: backend
+service: default
 runtime: python37
+
+handlers:
+# re-direct to index.html if frontend paths are given
+- url: /(|drive|status)
+  static_files: frontend/index.html
+  upload: frontend/index.html
+# access the static resources
+- url: /static/(.*\.(gif|png|jpg|css|js))$
+  static_files: frontend/static/\1
+  upload: frontend/static/.*\.(gif|png|jpg|css|js)$
+# access the static resources
+- url: /static/(.*\.(gif|png|jpg|ico|css|js|json|txt))$
+  static_files: frontend/\1
+  upload: frontend/.*\.(gif|png|jpg|ico|css|js|json|txt)$
+# ...
