@@ -27,12 +27,9 @@ app.secret_key = b'5oZW6\n$#^#3w3FE3'
 
 # Session config
 SESSION_TYPE = 'memcached'
+SESSION_MEMCACHED = '10.12.238.220:6379'
 app.config.from_object(__name__)
 Session(app)
-
-# CORS - cross domain config
-# cors = CORS(app, supports_credentials=True)
-# app.config['CORS_HEADERS'] = 'Content-Type'
 
 
 class RunningStatus:
