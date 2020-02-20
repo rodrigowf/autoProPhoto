@@ -1,4 +1,4 @@
-gcloud app deploy app.yaml --project refoto
+gcloud app deploy app.yaml --project refotos
 
 
 authorizedNetwork: projects/refoto/global/networks/default
@@ -37,3 +37,5 @@ gcloud beta compute networks vpc-access connectors create memcacheconnector
 0000000000000000 0000000000000000 0000 000000000000 0000000000000000
 
 gcloud beta compute networks vpc-access connectors create memcacheconnector --network default --region southamerica-east1 --range 10.32.0.0/28
+
+10.139.0.0/28
