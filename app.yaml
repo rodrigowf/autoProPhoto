@@ -1,6 +1,9 @@
 service: default
 runtime: python37
 
+vpc_access_connector:
+  name: "projects/refotos/locations/us-central1/connectors/memcacheconnector"
+
 handlers:
 # re-direct to index.html if frontend paths are given
 - url: (/|/drive|/status)
@@ -15,6 +18,3 @@ handlers:
   static_files: frontend/\1
   upload: frontend/.*\.(gif|png|jpg|ico|css|js|json|txt)$
 # ...
-
-vpc_access_connector:
-  name: "projects/refotos/locations/us-central1/connectors/memcacheconnector"
