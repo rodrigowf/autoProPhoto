@@ -2,6 +2,7 @@ Flask
 requests
 Flask-Cors
 Flask-Session
+python-memcached
 google-api-python-client
 google-auth-oauthlib
 numpy
