@@ -3,6 +3,11 @@ requests
 Flask-Cors
 Flask-Session
 python-memcached
+
+Werkzeug
+itsdangerous
+google-appengine
+
 google-api-python-client
 google-auth-oauthlib
 numpy

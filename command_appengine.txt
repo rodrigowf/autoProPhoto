@@ -1,1 +1,37 @@
 gcloud app deploy app.yaml --project refoto
+
+
+authorizedNetwork: projects/refoto/global/networks/default
+connectMode: DIRECT_PEERING
+createTime: '2020-02-20T15:02:48.925711268Z'
+currentLocationId: southamerica-east1-b
+
+    host: 10.232.164.195
+
+locationId: southamerica-east1-b
+memorySizeGb: 2
+name: projects/refoto/locations/southamerica-east1/instances/myinstance
+persistenceIamIdentity: serviceAccount:185968062327-compute@developer.gserviceaccount.com
+
+    port: 6379
+
+redisVersion: REDIS_4_0
+reservedIpRange: 10.232.164.192/29
+state: READY
+tier: BASIC
+
+
+gcloud beta redis instances create myinstance --size=2 --region=us-central1 --redis-version=redis_4_0
+
+
+gcloud beta compute networks vpc-access connectors create CONNECTOR_NAME \
+--network VPC_NETWORK \
+--region REGION \
+--range IP_RANGE
+
+gcloud beta compute networks vpc-access connectors create memcacheconnector
+--network projects/refoto/global/networks/default
+--region southamerica-east1
+--range 10.232.164.192/29
+
+0000000000000000 0000000000000000 0000 000000000000 0000000000000000

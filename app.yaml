@@ -15,3 +15,6 @@ handlers:
   static_files: frontend/\1
   upload: frontend/.*\.(gif|png|jpg|ico|css|js|json|txt)$
 # ...
+
+vpc_access_connector:
+  name: "projects/refoto/locations/us-central1/connectors/memcachecon"
