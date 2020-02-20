@@ -15,7 +15,7 @@ import googleapiclient.discovery
 from drive_process import ProcessThread
 
 
-drive_redirect = 'https://refoto.appspot.com/drive'
+drive_redirect = 'https://refotos.appspot.com/drive'
 
 # This variable specifies the name of a file that contains the OAuth 2.0
 # information for this application, including its client_id and client_secret.
