@@ -35,3 +35,5 @@ gcloud beta compute networks vpc-access connectors create memcacheconnector
 --range 10.232.164.192/29
 
 0000000000000000 0000000000000000 0000 000000000000 0000000000000000
+
+gcloud beta compute networks vpc-access connectors create memcacheconnector --network default --region southamerica-east1 --range 10.32.0.0/28
