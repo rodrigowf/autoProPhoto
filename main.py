@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-
 # [START gae_python37_app]
 import flask
 import requests
-from flask_cors import CORS, cross_origin
+# from flask_cors import CORS, cross_origin
 from flask_session import Session
 
 import google.oauth2.credentials
@@ -29,13 +27,13 @@ app = flask.Flask(__name__)
 app.secret_key = b'5oZW6\n$#^#3w3FE3'
 
 # Session config
-SESSION_TYPE = 'filesystem'
+SESSION_TYPE = 'memcached'
 app.config.from_object(__name__)
 Session(app)
 
 # CORS - cross domain config
-cors = CORS(app, supports_credentials=True)
-app.config['CORS_HEADERS'] = 'Content-Type'
+# cors = CORS(app, supports_credentials=True)
+# app.config['CORS_HEADERS'] = 'Content-Type'
 
 
 class RunningStatus:
@@ -134,7 +132,6 @@ def process_folder(folder_id):
 
 @app.route('/list_drive_files')
 def drive_list():
-
     # Check if it's logged in, if not, do it.
     if 'credentials' not in flask.session:
         return flask.redirect('do_authorize')
