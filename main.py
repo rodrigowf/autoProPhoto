@@ -58,6 +58,11 @@ def get_fileslist():
                           'files_list': status['files_list']})
 
 
+@app.route('/_clean_all')
+def clean_all():
+    flask.session.pop('status', None)
+
+
 @app.route('/get_status')
 def get_status():
     if 'status' not in flask.session:

@@ -14,31 +14,23 @@ API_VERSION = 'v3'
 
 
 class ProcessThread (threading.Thread):
-    ids_count = 0
-    threads = []
 
     def __init__(self, credentials, folder_id):
         threading.Thread.__init__(self)
-        self.threadID = ProcessThread.ids_count
-        self.running = False
-        self.status = session['status']
-        session['status']['my_thread_id'] = self.threadID
         self.credentials = credentials
         self.folder_id = folder_id
-        ProcessThread.ids_count += 1
-        ProcessThread.threads.append(self)
 
     def run(self):
-        print("Starting thread number %d" % self.threadID)
-        self.running = True
+        print("Starting thread id = %d" % self.ident)
+        session['status']['my_thread_id'] = self.ident
         session['status']['running'] = True
         process_folder(self.credentials, self.folder_id)
-        self.running = False
         session['status']['running'] = False
-        print("Exiting  thread number %d" % self.threadID)
+        session.pop('status', None)
+        print("Exiting thread id = %d" % self.ident)
 
 
-def process_folder(credentials, folder_id, status):
+def process_folder(credentials, folder_id):
 
     drive = googleapiclient.discovery.build(
         API_SERVICE_NAME, API_VERSION, credentials=credentials)
@@ -145,6 +137,5 @@ def process_folder(credentials, folder_id, status):
     print('Todas as imagens salvas no Drive !')
 
     session['status']['running'] = False
-    session['status']['my_thread_id'].running = False
 
     return result_folder_name
