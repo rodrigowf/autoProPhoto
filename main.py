@@ -294,4 +294,4 @@ if __name__ == '__main__':
 
     # Specify a hostname and port that are set as a valid redirect URI
     # for your API project in the Google API Console.
-    app.run(host='35.222.209.134', port=8080, debug=True)
+    app.run(host='127.0.0.1', port=8080, debug=True)
