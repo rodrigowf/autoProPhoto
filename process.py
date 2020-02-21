@@ -150,58 +150,58 @@ def clean_all_libs():
     del grower4
 
 
-def process_image(img, session):
+def process_image(img, status):
     # workflow 1 begins here for each image:
     print('white balance ........')
-    session['status']['progress'] = 0
+    status['progress'] = 0
     out1 = wb.run(img)
-    if session['status']['cancel_signal']:
+    if status['cancel_signal']:
         return False
     print('gamma ........')
-    session['status']['progress'] = 20
+    status['progress'] = 20
     out2 = gamma(out1)
-    if session['status']['cancel_signal']:
+    if status['cancel_signal']:
         return False
     print('denoising ........')
-    session['status']['progress'] = 30
+    status['progress'] = 30
     out3 = denoiser.run(out2)
-    if session['status']['cancel_signal']:
+    if status['cancel_signal']:
         return False
     print('antiblur ........')
-    session['status']['progress'] = 40
+    status['progress'] = 40
     out4 = antiblur(out3)
-    if session['status']['cancel_signal']:
+    if status['cancel_signal']:
         return False
     print('crescendo ........')
-    session['status']['progress'] = 50
+    status['progress'] = 50
     out5 = grow(out4)
-    if session['status']['cancel_signal']:
+    if status['cancel_signal']:
         return False
     print('Denoisinng pela 2a vez .....')
-    session['status']['progress'] = 75
+    status['progress'] = 75
     out6 = denoiser2.process(out5)
-    if session['status']['cancel_signal']:
+    if status['cancel_signal']:
         return False
     print('feito!')
-    session['status']['progress'] = 100
+    status['progress'] = 100
     return out6
 
 
-def run_array(input_arr, session):
+def run_array(input_arr, status):
     # load_all_libs()
 
-    if session['status']['cancel_signal']:
+    if status['cancel_signal']:
         return False
 
     out_arr = []
     for img_id, img in enumerate(input_arr):
-        if session['status']['cancel_signal']:
+        if status['cancel_signal']:
             return False
         print('Processing image %d from %d' % (img_id, len(input_arr)))
-        session['status']['current_file'] = img_id
-        out_arr.append(process_image(img, session))
+        status['current_file'] = img_id
+        out_arr.append(process_image(img, status))
 
-    if session['status']['cancel_signal']:
+    if status['cancel_signal']:
         return False
 
     return out_arr

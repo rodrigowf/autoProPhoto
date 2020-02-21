@@ -6,7 +6,7 @@ import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 
-from drive_process import startThread
+from drive_process import ProcessThread, status_list, get_status, clean_status
 
 
 drive_redirect = 'https://refotos.appspot.com/drive'
@@ -25,32 +25,20 @@ app = flask.Flask(__name__)
 app.secret_key = b'5oZW66$#^#3w3FE3'
 
 
-def get_status_dict():
-    return {
-        'running': False,
-        'folder_name': '',
-        'files_list': [],
-        'current_file': 0,
-        'progress': 0,
-        'my_thread_id': 0,
-        'cancel_signal': False,
-    }
-
-
 @app.route('/test')
-def index():
-    return print_index_table()
+def test_server():
+    return '<h1>Servidor Funcionando!</h1>'
 
 
 @app.route('/get_filelist')
 def get_fileslist():
-    if 'status' not in flask.session:
+    if flask.session.sid not in status_list:
         return flask.jsonify({'running': 'False'})
 
-    status = flask.session['status']
+    status = get_status(flask.session.sid)
 
     if not status['running']:
-        flask.session.pop('status', None)
+        clean_status(flask.session.sid)
         return flask.jsonify({'running': 'False'})
 
     return flask.jsonify({'running': 'True',
@@ -60,19 +48,19 @@ def get_fileslist():
 
 @app.route('/_clean_all')
 def clean_all():
-    flask.session.pop('status', None)
+    clean_status(flask.session.sid)
     return flask.jsonify({'clean': 'yeah it is!'})
 
 
 @app.route('/get_status')
 def get_status():
-    if 'status' not in flask.session:
+    if flask.session.sid not in status_list:
         return flask.jsonify({'running': 'False'})
 
-    status = flask.session['status']
+    status = get_status(flask.session.sid)
 
     if not status['running']:
-        flask.session.pop('status', None)
+        clean_status(flask.session.sid)
         return flask.jsonify({'running': 'False'})
 
     return flask.jsonify({'running': 'True',
@@ -82,16 +70,17 @@ def get_status():
 
 @app.route('/cancel_processing')
 def cancel_processing():
-    if 'status' not in flask.session:
+    if flask.session.sid not in status_list:
         return flask.jsonify({'running': 'False',
                               'done': 'False'})
 
-    flask.session['status']['cancel_signal'] = True
+    status = get_status(flask.session.sid)
+    status['cancel_signal'] = True
 
-    # flask.session['status']['my_thread_id']  .join()
-    # flask.session.pop('status', None)
+    status['my_thread'].join()
+    clean_status(flask.session.sid)
 
-    return flask.jsonify({'running': 'True',
+    return flask.jsonify({'running': 'False',
                           'done': 'True'})
 
 
@@ -101,21 +90,20 @@ def process_folder(folder_id):
     if 'credentials' not in flask.session:
         return flask.redirect('do_authorize')
 
-    if 'status' in flask.session:
-        if flask.session['status']['running'] is True:
+    if flask.session.sid in status_list:
+        status = get_status(flask.session.sid)
+        if status['running'] is True:
             return flask.jsonify({'running': 'True'})
-        elif not flask.session['status']['running']:
-            flask.session.pop('status', None)
+        elif not status['running']:
+            clean_status(flask.session.sid)
 
     # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(
       **flask.session['credentials'])
 
-    status = get_status_dict()
-    flask.session['status'] = status
-
     # Create and start the thread that process all the selected folder
-    startThread(app, credentials, folder_id)
+    thread = ProcessThread(credentials, folder_id, flask.session.sid)
+    thread.start()
 
     # Save credentials back to session in case access token was refreshed.
     # ACTION ITEM: In a production app, you likely want to save these
@@ -131,7 +119,7 @@ def drive_list():
     if 'credentials' not in flask.session:
         return flask.redirect('do_authorize')
 
-    if 'status' in flask.session:
+    if flask.session.sid in status_list:
         return flask.jsonify({'running': 'True'})
 
     # Load credentials from the session.
@@ -210,23 +198,22 @@ def revoke():
     credentials = google.oauth2.credentials.Credentials(
         **flask.session['credentials'])
 
-    revoke = requests.post('https://oauth2.googleapis.com/revoke',
+    revoke_ret = requests.post('https://oauth2.googleapis.com/revoke',
                            params={'token': credentials.token},
                            headers={'content-type': 'application/x-www-form-urlencoded'})
 
-    status_code = getattr(revoke, 'status_code')
+    status_code = getattr(revoke_ret, 'status_code')
     if status_code == 200:
-        return 'Credentials successfully revoked.' + print_index_table()
+        return 'Credentials successfully revoked.'
     else:
-        return 'An error occurred.' + print_index_table()
+        return 'An error occurred.'
 
 
 @app.route('/clear_credentials')
 def clear_credentials():
     if 'credentials' in flask.session:
         del flask.session['credentials']
-    return ('Credentials have been cleared.<br><br>' +
-            print_index_table())
+    return 'Credentials have been cleared.<br><br>'
 
 
 def credentials_to_dict(credentials):
@@ -236,28 +223,6 @@ def credentials_to_dict(credentials):
             'client_id':        credentials.client_id,
             'client_secret':    credentials.client_secret,
             'scopes':           credentials.scopes}
-
-
-def print_index_table():
-    return ('<table>' +
-            '<tr><td><a href="/test">Test an API request</a></td>' +
-            '<td>Submit an API request and see a formatted JSON response. ' +
-            '    Go through the authorization flow if there are no stored ' +
-            '    credentials for the user.</td></tr>' +
-            '<tr><td><a href="/authorize">Test the auth flow directly</a></td>' +
-            '<td>Go directly to the authorization flow. If there are stored ' +
-            '    credentials, you still might not be prompted to reauthorize ' +
-            '    the application.</td></tr>' +
-            '<tr><td><a href="/revoke">Revoke current credentials</a></td>' +
-            '<td>Revoke the access token associated with the current user ' +
-            '    session. After revoking credentials, if you go to the test ' +
-            '    page, you should see an <code>invalid_grant</code> error.' +
-            '</td></tr>' +
-            '<tr><td><a href="/clear">Clear Flask session credentials</a></td>' +
-            '<td>Clear the access token currently stored in the user session. ' +
-            '    After clearing the token, if you <a href="/test">test the ' +
-            '    API request</a> again, you should go back to the auth flow.' +
-            '</td></tr></table>')
 
 
 if __name__ == '__main__':
