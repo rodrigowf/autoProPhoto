@@ -1,12 +1,13 @@
 # [START gae_python37_app]
 import flask
 import requests
+import uuid
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 
-from drive_process import ProcessThread, status_list, get_status, clean_status
+from drive_process import ProcessThread, get_status, clean_status
 
 
 drive_redirect = 'https://refotos.appspot.com/drive'
@@ -32,13 +33,14 @@ def test_server():
 
 @app.route('/get_filelist')
 def get_fileslist():
-    if flask.session.sid not in status_list:
+    if 'sid' not in flask.session:
         return flask.jsonify({'running': 'False'})
 
-    status = get_status(flask.session.sid)
+    status = get_status(flask.session['sid'])
 
     if not status['running']:
-        clean_status(flask.session.sid)
+        clean_status(flask.session['sid'])
+        flask.session.pop('sid')
         return flask.jsonify({'running': 'False'})
 
     return flask.jsonify({'running': 'True',
@@ -48,19 +50,21 @@ def get_fileslist():
 
 @app.route('/_clean_all')
 def clean_all():
-    clean_status(flask.session.sid)
+    clean_status(flask.session['sid'])
+    flask.session.pop('sid')
     return flask.jsonify({'clean': 'yeah it is!'})
 
 
 @app.route('/get_status')
 def get_status():
-    if flask.session.sid not in status_list:
+    if 'sid' not in flask.session:
         return flask.jsonify({'running': 'False'})
 
-    status = get_status(flask.session.sid)
+    status = get_status(flask.session['sid'])
 
     if not status['running']:
-        clean_status(flask.session.sid)
+        clean_status(flask.session['sid'])
+        flask.session.pop('sid')
         return flask.jsonify({'running': 'False'})
 
     return flask.jsonify({'running': 'True',
@@ -70,15 +74,16 @@ def get_status():
 
 @app.route('/cancel_processing')
 def cancel_processing():
-    if flask.session.sid not in status_list:
+    if 'sid' not in flask.session:
         return flask.jsonify({'running': 'False',
                               'done': 'False'})
 
-    status = get_status(flask.session.sid)
+    status = get_status(flask.session['sid'])
     status['cancel_signal'] = True
 
     status['my_thread'].join()
-    clean_status(flask.session.sid)
+    clean_status(flask.session['sid'])
+    flask.session.pop('sid')
 
     return flask.jsonify({'running': 'False',
                           'done': 'True'})
@@ -90,19 +95,22 @@ def process_folder(folder_id):
     if 'credentials' not in flask.session:
         return flask.redirect('do_authorize')
 
-    if flask.session.sid in status_list:
-        status = get_status(flask.session.sid)
+    if 'sid' not in flask.session:
+        status = get_status(flask.session['sid'])
         if status['running'] is True:
             return flask.jsonify({'running': 'True'})
         elif not status['running']:
-            clean_status(flask.session.sid)
+            clean_status(flask.session['sid'])
+            flask.session.pop('sid')
 
     # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(
       **flask.session['credentials'])
 
+    flask.session['sid'] = uuid.uuid4()
+
     # Create and start the thread that process all the selected folder
-    thread = ProcessThread(credentials, folder_id, flask.session.sid)
+    thread = ProcessThread(credentials, folder_id, flask.session['sid'])
     thread.start()
 
     # Save credentials back to session in case access token was refreshed.
@@ -119,7 +127,7 @@ def drive_list():
     if 'credentials' not in flask.session:
         return flask.redirect('do_authorize')
 
-    if flask.session.sid in status_list:
+    if 'sid' not in flask.session:
         return flask.jsonify({'running': 'True'})
 
     # Load credentials from the session.
