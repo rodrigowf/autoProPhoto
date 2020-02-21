@@ -1,1 +1,0 @@
-SECRET_KEY = "5oZW6$#^#3w3FE3"

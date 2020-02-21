@@ -102,10 +102,11 @@ def process_folder(folder_id):
     if 'credentials' not in flask.session:
         return flask.redirect('do_authorize')
 
-    if 'status' in flask.session and flask.session['status'].running is True:
-        return flask.jsonify({'running': 'True'})
-    elif not flask.session['status'].running:
-        flask.session.pop('status', None)
+    if 'status' in flask.session:
+        if flask.session['status'].running is True:
+            return flask.jsonify({'running': 'True'})
+        elif not flask.session['status'].running:
+            flask.session.pop('status', None)
 
     # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(
