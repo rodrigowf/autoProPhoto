@@ -84,7 +84,8 @@ def process_folder(credentials, folder_id, status):
 
         nparr = np.fromstring(fh.getvalue(), np.uint8)
         img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        img = np.flip(img_np, 2)
+        img = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        # img = np.flip(img_np, 2)
 
         file_name = file['name'].split('.')[0]
 
@@ -131,7 +132,8 @@ def process_folder(credentials, folder_id, status):
             'name': name+'.png',
             'parents': [result_folder_id]
         }
-        img_np = np.flip(image, 2)
+        # img_np = np.flip(image, 2)
+        img_np = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         is_success, img_enc = cv2.imencode(".png", img_np, [cv2.IMWRITE_PNG_COMPRESSION, 0])
         fh = io.BytesIO(img_enc)
         media = MediaIoBaseUpload(fh, mimetype='image/png', resumable=True)
