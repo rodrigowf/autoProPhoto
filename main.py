@@ -28,7 +28,7 @@ API_VERSION = 'v3'
 # app.config.from_object(__name__)
 
 app = flask.Flask(__name__)
-app.secret_key = '5oZW66$#^#3w3FE3'
+app.secret_key = b'5oZW66$#^#3w3FE3'
 
 # Session(app)
 
