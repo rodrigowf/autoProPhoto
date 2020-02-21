@@ -6,7 +6,7 @@ import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 
-from drive_process import ProcessThread
+from drive_process import startThread
 
 
 drive_redirect = 'https://refotos.appspot.com/drive'
@@ -115,8 +115,7 @@ def process_folder(folder_id):
     flask.session['status'] = status
 
     # Create and start the thread that process all the selected folder
-    thread = ProcessThread(credentials, folder_id, status)
-    thread.start()  # aqui q ele faz status['running'] = True
+    startThread(app, credentials, folder_id)
 
     # Save credentials back to session in case access token was refreshed.
     # ACTION ITEM: In a production app, you likely want to save these

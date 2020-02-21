@@ -1,5 +1,6 @@
 import io
 import cv2
+import flask
 import numpy as np
 import threading
 import googleapiclient.discovery
@@ -11,27 +12,37 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 API_SERVICE_NAME = 'drive'
 API_VERSION = 'v3'
 
+app = None
+
+
+def startThread(gl_app, credentials, folder_id):
+    global app
+    # Create and start the thread that process all the selected folder
+    app = gl_app
+    thread = ProcessThread(credentials, folder_id)
+    thread.start()
+    return thread
+
 
 class ProcessThread (threading.Thread):
 
-    def __init__(self, credentials, folder_id, app):
+    def __init__(self, credentials, folder_id):
         threading.Thread.__init__(self)
         self.credentials = credentials
         self.folder_id = folder_id
-        self.app = app
 
     def run(self):
-        with self.app.app_context():
+        with app.app_context():
             print("Starting thread")
             # self.session['status']['my_thread_id'] = self.ident
             flask.session['status']['running'] = True
-            process_folder(self.credentials, self.folder_id, self.app)
+            process_folder(self.credentials, self.folder_id)
             flask.session['status']['running'] = False
             flask.session.pop('status', None)
             print("Exiting thread")
 
 
-def process_folder(credentials, folder_id, app):
+def process_folder(credentials, folder_id):
     with app.app_context():
         flask.session['status']['running'] = True
 
@@ -141,4 +152,4 @@ def process_folder(credentials, folder_id, app):
 
         flask.session['status']['running'] = False
 
-        return result_folder_name
+    return result_folder_name
