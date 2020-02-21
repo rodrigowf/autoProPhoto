@@ -25,15 +25,16 @@ app = flask.Flask(__name__)
 app.secret_key = b'5oZW66$#^#3w3FE3'
 
 
-class RunningStatus:
-    def __init__(self):
-        self.running = False
-        self.folder_name = ''
-        self.files_list = []
-        self.current_file = 0
-        self.progress = 0
-        self.my_thread_id = 0
-        self.cancel_signal = False
+def get_status_dict():
+    return {
+        'running': False,
+        'folder_name': '',
+        'files_list': [],
+        'current_file': 0,
+        'progress': 0,
+        'my_thread_id': 0,
+        'cancel_signal': False,
+    }
 
 
 @app.route('/test')
@@ -104,8 +105,8 @@ def process_folder(folder_id):
     credentials = google.oauth2.credentials.Credentials(
       **flask.session['credentials'])
 
-    status = RunningStatus()
-    flask.session['status'] = flask.jsonify(status)
+    status = get_status_dict()
+    flask.session['status'] = status
 
     # Create and start the thread that process all the selected folder
     thread = ProcessThread(credentials, folder_id, status)
