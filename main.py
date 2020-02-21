@@ -87,8 +87,10 @@ def cancel_processing():
                               'done': 'False'})
 
     flask.session['status']['cancel_signal'] = True
+
     # flask.session['status']['my_thread_id']  .join()
     # flask.session.pop('status', None)
+
     return flask.jsonify({'running': 'True',
                           'done': 'True'})
 
@@ -130,7 +132,7 @@ def drive_list():
     if 'credentials' not in flask.session:
         return flask.redirect('do_authorize')
 
-    if 'status' in flask.session and flask.session['status']['running'] is True:
+    if 'status' in flask.session:
         return flask.jsonify({'running': 'True'})
 
     # Load credentials from the session.

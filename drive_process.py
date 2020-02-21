@@ -21,13 +21,13 @@ class ProcessThread (threading.Thread):
         self.session = session
 
     def run(self):
-        print("Starting thread id = %d" % self.ident)
-        self.session['status']['my_thread_id'] = self.ident
+        print("Starting thread")
+        # self.session['status']['my_thread_id'] = self.ident
         self.session['status']['running'] = True
         process_folder(self.credentials, self.folder_id, self.session)
         self.session['status']['running'] = False
         self.session.pop('status', None)
-        print("Exiting thread id = %d" % self.ident)
+        print("Exiting thread")
 
 
 def process_folder(credentials, folder_id, session):
