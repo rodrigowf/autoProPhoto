@@ -7,7 +7,7 @@ class Esrgan:
     def __init__(self):
         model_path = 'esrgan/models/interp_08.pth'  # models/RRDB_ESRGAN_x4.pth OR models/RRDB_PSNR_x4.pth
         # self.device = torch.device('cuda')  # if you want to run on CPU, change 'cuda' -> cpu
-        self.device = torch.device('cuda')
+        self.device = torch.device('cpu')
 
         model = arch.RRDBNet(3, 3, 64, 23, gc=32)
         model.load_state_dict(torch.load(model_path), strict=True)
