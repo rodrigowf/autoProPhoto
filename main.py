@@ -80,11 +80,9 @@ def cancel_processing():
         return flask.jsonify({'running': 'False',
                               'done': 'False'})
 
-    status = flask.session['status']
-    status['cancel_signal'] = True
-    ProcessThread.threads[status['my_thread_id']].join()
+    flask.session['status']['cancel_signal'] = True
+    ProcessThread.threads[flask.session['status']['my_thread_id']].join()
     flask.session.pop('status', None)
-    del status
     return flask.jsonify({'running': 'False',
                           'done': 'True'})
 
@@ -96,10 +94,9 @@ def process_folder(folder_id):
         return flask.redirect('do_authorize')
 
     if 'status' in flask.session:
-        status = flask.session['status']
-        if status['running'] is True:
+        if flask.session['status']['running'] is True:
             return flask.jsonify({'running': 'True'})
-        elif not status['running']:
+        elif not flask.session['status']['running']:
             flask.session.pop('status', None)
 
     # Load credentials from the session.
@@ -110,7 +107,7 @@ def process_folder(folder_id):
     flask.session['status'] = status
 
     # Create and start the thread that process all the selected folder
-    thread = ProcessThread(credentials, folder_id, status)
+    thread = ProcessThread(credentials, folder_id)
     thread.start()  # aqui q ele faz status['running'] = True
 
     # Save credentials back to session in case access token was refreshed.

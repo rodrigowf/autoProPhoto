@@ -2,6 +2,7 @@ import io
 import cv2
 import numpy as np
 import threading
+from flask import session
 import googleapiclient.discovery
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
@@ -16,12 +17,12 @@ class ProcessThread (threading.Thread):
     ids_count = 0
     threads = []
 
-    def __init__(self, credentials, folder_id, status):
+    def __init__(self, credentials, folder_id):
         threading.Thread.__init__(self)
         self.threadID = ProcessThread.ids_count
         self.running = False
-        self.status = status
-        self.status['my_thread_id'] = self.threadID
+        self.status = session['status']
+        session['status']['my_thread_id'] = self.threadID
         self.credentials = credentials
         self.folder_id = folder_id
         ProcessThread.ids_count += 1
@@ -30,10 +31,10 @@ class ProcessThread (threading.Thread):
     def run(self):
         print("Starting thread number %d" % self.threadID)
         self.running = True
-        self.status['running'] = True
-        process_folder(self.credentials, self.folder_id, self.status)
+        session['status']['running'] = True
+        process_folder(self.credentials, self.folder_id)
         self.running = False
-        self.status['running'] = False
+        session['status']['running'] = False
         print("Exiting  thread number %d" % self.threadID)
 
 
@@ -49,7 +50,7 @@ def process_folder(credentials, folder_id, status):
     print('folder_name = '+original_folder_name)
     print('Downloading user chosen files....')
 
-    if status['cancel_signal']:
+    if session['status']['cancel_signal']:
         return False
 
     arr_files = []
@@ -61,11 +62,11 @@ def process_folder(credentials, folder_id, status):
     print('lista de arquivos:')
     print(file_list)
 
-    if status['cancel_signal']:
+    if session['status']['cancel_signal']:
         return False
 
-    status['files_list'] = file_list
-    status['folder_name'] = original_folder_name
+    session['status']['files_list'] = file_list
+    session['status']['folder_name'] = original_folder_name
 
     for file in file_list:
         print('baixando arquivo:')
@@ -79,7 +80,7 @@ def process_folder(credentials, folder_id, status):
             dwnl_status, done = downloader.next_chunk()
             print("Download %d %%." % int(dwnl_status.progress() * 100))
 
-        if status['cancel_signal']:
+        if session['status']['cancel_signal']:
             return False
 
         nparr = np.fromstring(fh.getvalue(), np.uint8)
@@ -92,19 +93,19 @@ def process_folder(credentials, folder_id, status):
 
     print('Imagens baixadas, preparado para rodar..')
 
-    if status['cancel_signal']:
+    if session['status']['cancel_signal']:
         return False
 
     # -----------------------
 
     # AQUI são processados todos os arquivos, uma vez que ele já foram jogados na pasta local
 
-    # result_arr = process.run_array(arr_files, status)
+    # result_arr = process.run_array(arr_files)
     result_arr = arr_files
 
     # -----------------------
 
-    if status['cancel_signal']:
+    if session['status']['cancel_signal']:
         return False
 
     print('Processamento de imagens concluído!')
@@ -122,7 +123,7 @@ def process_folder(credentials, folder_id, status):
 
     print('Criada pasta no drive: Folder ID: %s' % result_folder_id)
 
-    if status['cancel_signal']:
+    if session['status']['cancel_signal']:
         return False
 
     # joga todos os arquivos de resultado de volta no Drive
@@ -143,6 +144,7 @@ def process_folder(credentials, folder_id, status):
 
     print('Todas as imagens salvas no Drive !')
 
-    status['running'] = False
+    session['status']['running'] = False
+    session['status']['my_thread_id'].running = False
 
     return result_folder_name
