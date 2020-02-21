@@ -24,10 +24,10 @@ API_VERSION = 'v3'
 
 # Session config
 SESSION_TYPE = 'memcached'
-SESSION_MEMCACHED = '192.168.238.220:6379'
+SESSION_MEMCACHED = '10.12.238.220:6379'
 app = flask.Flask(__name__)
 app.config.from_object(__name__)
-app.secret_key = b'5oZW6\n$#^#3w3FE3'
+app.secret_key = '5oZW66$#^#3w3FE3'
 Session(app)
 
 
