@@ -7,7 +7,7 @@ import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 
-from drive_process import ProcessThread, get_status, clean_status
+from drive_process import ProcessThread, get_status, check_status, clean_status
 
 
 drive_redirect = 'https://refotos.appspot.com/drive'
@@ -26,14 +26,110 @@ app = flask.Flask(__name__)
 app.secret_key = b'5oZW66$#^#3w3FE3'
 
 
+# ainda não usei! \/
+def has_status():
+    if 'sid' in flask.session:  # Se tem ID salvo na session
+        if check_status(flask.session['sid']):  # Se tem um status salvo para esse ID
+            if get_status(flask.session['sid'])['running']:  # Se esse status está em 'running'
+                return True
+            else:
+                clean_status(flask.session['sid'])
+                flask.session.pop('sid')
+                return False
+        else:
+            flask.session.pop('sid')
+            return False
+    else:
+        return False
+
+
 @app.route('/test')
 def test_server():
     return '<h1>Servidor Funcionando!</h1>'
 
 
+# pré rpocessamento de imgs -----------------------------------------------------------------------
+
+
+@app.route('/list_drive_files')
+def drive_list():
+    # Check if it's logged in, if not, do it.
+    if 'credentials' not in flask.session:
+        return flask.redirect('do_authorize')
+
+    # Testes para ver se o processamento já está acontecendo em paralelo (nesse caso redireciona para ele)
+    if 'sid' in flask.session:
+        if check_status(flask.session['sid']):
+            return flask.jsonify({'running': 'True'})
+        else:
+            flask.session.pop('sid')
+
+    # Load credentials from the session.
+    credentials = google.oauth2.credentials.Credentials(
+        **flask.session['credentials'])
+
+    drive = googleapiclient.discovery.build(
+        API_SERVICE_NAME, API_VERSION, credentials=credentials)
+
+    files_ret = drive.files().list(
+        q="'root' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'").execute()
+    file_list = files_ret['files']
+
+    # Save credentials back to session in case access token was refreshed.
+    # ACTION ITEM: In a production app, you likely want to save these
+    #              credentials in a persistent database instead.
+    flask.session['credentials'] = credentials_to_dict(credentials)
+
+    return flask.jsonify({'running': 'False',
+                          'list': file_list})
+
+
+@app.route('/process_folder/<folder_id>')
+def process_folder(folder_id):
+    # Check if it's logged in, if not, do it.
+    if 'credentials' not in flask.session:
+        return flask.redirect('do_authorize')
+
+    # Testes para ver se o processamento já está acontecendo em paralelo (nesse caso redireciona para ele)
+    if 'sid' in flask.session:
+        if not check_status(flask.session['sid']):
+            flask.session.pop('sid')
+        else:
+            status = get_status(flask.session['sid'])
+            if status['running'] is True:
+                return flask.jsonify({'running': 'True'})
+            elif not status['running']:
+                clean_status(flask.session['sid'])
+                flask.session.pop('sid')
+
+    # Load credentials from the session.
+    credentials = google.oauth2.credentials.Credentials(
+      **flask.session['credentials'])
+
+    # Generate an ID for the session and status relative to it
+    flask.session['sid'] = uuid.uuid4()
+    # Create and start the thread that process all the selected folder
+    thread = ProcessThread(credentials, folder_id, flask.session['sid'])
+    thread.start()
+
+    # Save credentials back to session in case access token was refreshed.
+    # ACTION ITEM: In a production app, you likely want to save these
+    #              credentials in a persistent database instead.
+    flask.session['credentials'] = credentials_to_dict(credentials)
+
+    return flask.jsonify({'running': 'True'})
+
+
+# Enquanto processa imgs --------------------------------------------------------------------------
+
+
 @app.route('/get_filelist')
 def get_fileslist():
+    # Testes para ver se o processamento está realmente acontecendo (se não, sinaliza no retorno)
     if 'sid' not in flask.session:
+        return flask.jsonify({'running': 'False'})
+    if not check_status(flask.session['sid']):
+        flask.session.pop('sid')
         return flask.jsonify({'running': 'False'})
 
     status = get_status(flask.session['sid'])
@@ -48,16 +144,13 @@ def get_fileslist():
                           'files_list': status['files_list']})
 
 
-@app.route('/_clean_all')
-def clean_all():
-    clean_status(flask.session['sid'])
-    flask.session.pop('sid')
-    return flask.jsonify({'clean': 'yeah it is!'})
-
-
 @app.route('/get_status')
 def get_status():
+    # Testes para ver se o processamento está realmente acontecendo (se não, sinaliza no retorno)
     if 'sid' not in flask.session:
+        return flask.jsonify({'running': 'False'})
+    if not check_status(flask.session['sid']):
+        flask.session.pop('sid')
         return flask.jsonify({'running': 'False'})
 
     status = get_status(flask.session['sid'])
@@ -74,7 +167,12 @@ def get_status():
 
 @app.route('/cancel_processing')
 def cancel_processing():
+    # Testes para ver se o processamento está realmente acontecendo (se não, sinaliza no retorno)
     if 'sid' not in flask.session:
+        return flask.jsonify({'running': 'False',
+                              'done': 'False'})
+    if not check_status(flask.session['sid']):
+        flask.session.pop('sid')
         return flask.jsonify({'running': 'False',
                               'done': 'False'})
 
@@ -82,71 +180,22 @@ def cancel_processing():
     status['cancel_signal'] = True
 
     status['my_thread'].join()
-    clean_status(flask.session['sid'])
+    if check_status(flask.session['sid']):
+        clean_status(flask.session['sid'])
     flask.session.pop('sid')
 
     return flask.jsonify({'running': 'False',
                           'done': 'True'})
 
 
-@app.route('/process_folder/<folder_id>')
-def process_folder(folder_id):
-    # Check if it's logged in, if not, do it.
-    if 'credentials' not in flask.session:
-        return flask.redirect('do_authorize')
-
-    if 'sid' not in flask.session:
-        status = get_status(flask.session['sid'])
-        if status['running'] is True:
-            return flask.jsonify({'running': 'True'})
-        elif not status['running']:
-            clean_status(flask.session['sid'])
-            flask.session.pop('sid')
-
-    # Load credentials from the session.
-    credentials = google.oauth2.credentials.Credentials(
-      **flask.session['credentials'])
-
-    flask.session['sid'] = uuid.uuid4()
-
-    # Create and start the thread that process all the selected folder
-    thread = ProcessThread(credentials, folder_id, flask.session['sid'])
-    thread.start()
-
-    # Save credentials back to session in case access token was refreshed.
-    # ACTION ITEM: In a production app, you likely want to save these
-    #              credentials in a persistent database instead.
-    flask.session['credentials'] = credentials_to_dict(credentials)
-
-    return flask.jsonify({'running': 'True'})
+@app.route('/_clean_all')
+def clean_all():
+    clean_status(flask.session['sid'])
+    flask.session.pop('sid')
+    return flask.jsonify({'clean': 'yeah it is!'})
 
 
-@app.route('/list_drive_files')
-def drive_list():
-    # Check if it's logged in, if not, do it.
-    if 'credentials' not in flask.session:
-        return flask.redirect('do_authorize')
-
-    if 'sid' not in flask.session:
-        return flask.jsonify({'running': 'True'})
-
-    # Load credentials from the session.
-    credentials = google.oauth2.credentials.Credentials(
-      **flask.session['credentials'])
-
-    drive = googleapiclient.discovery.build(
-      API_SERVICE_NAME, API_VERSION, credentials=credentials)
-
-    files_ret = drive.files().list(q="'root' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'").execute()
-    file_list = files_ret['files']
-
-    # Save credentials back to session in case access token was refreshed.
-    # ACTION ITEM: In a production app, you likely want to save these
-    #              credentials in a persistent database instead.
-    flask.session['credentials'] = credentials_to_dict(credentials)
-
-    return flask.jsonify({'running': 'False',
-                          'list': file_list})
+# OAuth2 FUNCS ====================================================================================
 
 
 @app.route('/do_authorize')

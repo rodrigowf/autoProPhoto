@@ -11,6 +11,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 API_SERVICE_NAME = 'drive'
 API_VERSION = 'v3'
 
+
 status_list = {}
 
 
@@ -31,6 +32,10 @@ def set_status(sess_id):
     return status_list[sess_id]
 
 
+def check_status(sess_id):
+    return sess_id in status_list
+
+
 def get_status(sess_id):
     return status_list[sess_id]
 
@@ -49,9 +54,8 @@ class ProcessThread (threading.Thread):
         status['my_thread'] = self
 
     def run(self):
-        status = get_status(self.sess_id)
         print("Starting thread")
-        # self.session['status']['my_thread_id'] = self.ident
+        status = get_status(self.sess_id)
         status['running'] = True
         process_folder(self.credentials, self.folder_id, self.sess_id)
         status['running'] = False
