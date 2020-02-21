@@ -49,13 +49,13 @@ def get_fileslist():
 
     status = flask.session['status']
 
-    if not status.running:
+    if not status['running']:
         flask.session.pop('status', None)
         return flask.jsonify({'running': 'False'})
 
     return flask.jsonify({'running': 'True',
-                          'folder_name': status.folder_name,
-                          'files_list': status.files_list})
+                          'folder_name': status['folder_name'],
+                          'files_list': status['files_list']})
 
 
 @app.route('/get_status')
@@ -65,13 +65,13 @@ def get_status():
 
     status = flask.session['status']
 
-    if not status.running:
+    if not status['running']:
         flask.session.pop('status', None)
         return flask.jsonify({'running': 'False'})
 
     return flask.jsonify({'running': 'True',
-                          'current_file': status.current_file,
-                          'progress': status.progress})
+                          'current_file': status['current_file'],
+                          'progress': status['progress']})
 
 
 @app.route('/cancel_processing')
@@ -81,10 +81,10 @@ def cancel_processing():
                               'done': 'False'})
 
     status = flask.session['status']
-    status.cancel_signal = True
-    ProcessThread.threads[status.my_thread_id].join()
-    del status
+    status['cancel_signal'] = True
+    ProcessThread.threads[status['my_thread_id']].join()
     flask.session.pop('status', None)
+    del status
     return flask.jsonify({'running': 'False',
                           'done': 'True'})
 
@@ -96,9 +96,10 @@ def process_folder(folder_id):
         return flask.redirect('do_authorize')
 
     if 'status' in flask.session:
-        if flask.session['status'].running is True:
+        status = flask.session['status']
+        if status['running'] is True:
             return flask.jsonify({'running': 'True'})
-        elif not flask.session['status'].running:
+        elif not status['running']:
             flask.session.pop('status', None)
 
     # Load credentials from the session.
@@ -110,7 +111,7 @@ def process_folder(folder_id):
 
     # Create and start the thread that process all the selected folder
     thread = ProcessThread(credentials, folder_id, status)
-    thread.start()  # aqui q ele faz status.running = True
+    thread.start()  # aqui q ele faz status['running'] = True
 
     # Save credentials back to session in case access token was refreshed.
     # ACTION ITEM: In a production app, you likely want to save these
@@ -126,7 +127,7 @@ def drive_list():
     if 'credentials' not in flask.session:
         return flask.redirect('do_authorize')
 
-    if 'status' in flask.session and flask.session['status'].running is True:
+    if 'status' in flask.session and flask.session['status']['running'] is True:
         return flask.jsonify({'running': 'True'})
 
     # Load credentials from the session.

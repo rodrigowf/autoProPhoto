@@ -21,7 +21,7 @@ class ProcessThread (threading.Thread):
         self.threadID = ProcessThread.ids_count
         self.running = False
         self.status = status
-        self.status.my_thread_id = self.threadID
+        self.status['my_thread_id'] = self.threadID
         self.credentials = credentials
         self.folder_id = folder_id
         ProcessThread.ids_count += 1
@@ -30,10 +30,10 @@ class ProcessThread (threading.Thread):
     def run(self):
         print("Starting thread number %d" % self.threadID)
         self.running = True
-        self.status.running = True
+        self.status['running'] = True
         process_folder(self.credentials, self.folder_id, self.status)
         self.running = False
-        self.status.running = False
+        self.status['running'] = False
         print("Exiting  thread number %d" % self.threadID)
 
 
@@ -49,7 +49,7 @@ def process_folder(credentials, folder_id, status):
     print('folder_name = '+original_folder_name)
     print('Downloading user chosen files....')
 
-    if status.cancel_signal:
+    if status['cancel_signal']:
         return False
 
     arr_files = []
@@ -61,11 +61,11 @@ def process_folder(credentials, folder_id, status):
     print('lista de arquivos:')
     print(file_list)
 
-    if status.cancel_signal:
+    if status['cancel_signal']:
         return False
 
-    status.files_list = file_list
-    status.folder_name = original_folder_name
+    status['files_list'] = file_list
+    status['folder_name'] = original_folder_name
 
     for file in file_list:
         print('baixando arquivo:')
@@ -79,7 +79,7 @@ def process_folder(credentials, folder_id, status):
             dwnl_status, done = downloader.next_chunk()
             print("Download %d %%." % int(dwnl_status.progress() * 100))
 
-        if status.cancel_signal:
+        if status['cancel_signal']:
             return False
 
         nparr = np.fromstring(fh.getvalue(), np.uint8)
@@ -92,7 +92,7 @@ def process_folder(credentials, folder_id, status):
 
     print('Imagens baixadas, preparado para rodar..')
 
-    if status.cancel_signal:
+    if status['cancel_signal']:
         return False
 
     # -----------------------
@@ -104,7 +104,7 @@ def process_folder(credentials, folder_id, status):
 
     # -----------------------
 
-    if status.cancel_signal:
+    if status['cancel_signal']:
         return False
 
     print('Processamento de imagens concluído!')
@@ -122,7 +122,7 @@ def process_folder(credentials, folder_id, status):
 
     print('Criada pasta no drive: Folder ID: %s' % result_folder_id)
 
-    if status.cancel_signal:
+    if status['cancel_signal']:
         return False
 
     # joga todos os arquivos de resultado de volta no Drive
@@ -143,6 +143,6 @@ def process_folder(credentials, folder_id, status):
 
     print('Todas as imagens salvas no Drive !')
 
-    status.running = False
+    status['running'] = False
 
     return result_folder_name
