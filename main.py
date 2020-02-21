@@ -105,7 +105,7 @@ def process_folder(folder_id):
       **flask.session['credentials'])
 
     status = RunningStatus()
-    flask.session['status'] = status
+    flask.session['status'] = flask.jsonify(status)
 
     # Create and start the thread that process all the selected folder
     thread = ProcessThread(credentials, folder_id, status)
