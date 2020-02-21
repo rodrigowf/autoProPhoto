@@ -1,7 +1,7 @@
-# [START gae_python37_app]
 import flask
 import requests
 import uuid
+from flask_cors import CORS, cross_origin
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
@@ -24,6 +24,10 @@ API_VERSION = 'v3'
 
 app = flask.Flask(__name__)
 app.secret_key = b'5oZW66$#^#3w3FE3'
+
+# CORS - cross domain config
+cors = CORS(app, supports_credentials=True)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 
 # ainda não usei! \/
@@ -290,5 +294,4 @@ if __name__ == '__main__':
 
     # Specify a hostname and port that are set as a valid redirect URI
     # for your API project in the Google API Console.
-    app.run(host='127.0.0.1', port=8080, debug=True)
-# [END gae_python37_app]
+    app.run(host='35.222.209.134', port=8080, debug=True)
