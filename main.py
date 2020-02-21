@@ -1,7 +1,6 @@
 # [START gae_python37_app]
 import flask
 import requests
-# from flask_session import Session
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
@@ -22,15 +21,8 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 API_SERVICE_NAME = 'drive'
 API_VERSION = 'v3'
 
-# Session config
-# SESSION_TYPE = 'memcached'
-# SESSION_MEMCACHED = '10.12.238.220:6379'
-# app.config.from_object(__name__)
-
 app = flask.Flask(__name__)
 app.secret_key = b'5oZW66$#^#3w3FE3'
-
-# Session(app)
 
 
 class RunningStatus:
