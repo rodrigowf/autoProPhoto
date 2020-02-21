@@ -76,8 +76,8 @@ def process_folder(credentials, folder_id, status):
         downloader = MediaIoBaseDownload(fh, request)
         done = False
         while done is False:
-            status, done = downloader.next_chunk()
-            print("Download %d %%." % int(status.progress() * 100))
+            dwnl_status, done = downloader.next_chunk()
+            print("Download %d %%." % int(dwnl_status.progress() * 100))
 
         if status.cancel_signal:
             return False
