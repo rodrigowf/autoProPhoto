@@ -88,7 +88,6 @@ def process_folder(credentials, folder_id, status):
         # img = np.flip(img_np, 2)
 
         file_name = file['name'].split('.')[0]
-
         arr_files.append([file_name, img])
 
     print('Imagens baixadas, preparado para rodar..')
