@@ -115,7 +115,7 @@ def process_folder(folder_id):
     flask.session['status'] = status
 
     # Create and start the thread that process all the selected folder
-    thread = ProcessThread(credentials, folder_id, flask.session)
+    thread = ProcessThread(credentials, folder_id, status)
     thread.start()  # aqui q ele faz status['running'] = True
 
     # Save credentials back to session in case access token was refreshed.
