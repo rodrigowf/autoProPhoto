@@ -61,6 +61,7 @@ def get_fileslist():
 @app.route('/_clean_all')
 def clean_all():
     flask.session.pop('status', None)
+    return flask.jsonify({'clean': 'yeah it is!'})
 
 
 @app.route('/get_status')
@@ -86,9 +87,9 @@ def cancel_processing():
                               'done': 'False'})
 
     flask.session['status']['cancel_signal'] = True
-    ProcessThread.threads[flask.session['status']['my_thread_id']].join()
-    flask.session.pop('status', None)
-    return flask.jsonify({'running': 'False',
+    # flask.session['status']['my_thread_id']  .join()
+    # flask.session.pop('status', None)
+    return flask.jsonify({'running': 'True',
                           'done': 'True'})
 
 
@@ -112,7 +113,7 @@ def process_folder(folder_id):
     flask.session['status'] = status
 
     # Create and start the thread that process all the selected folder
-    thread = ProcessThread(credentials, folder_id)
+    thread = ProcessThread(credentials, folder_id, flask.session)
     thread.start()  # aqui q ele faz status['running'] = True
 
     # Save credentials back to session in case access token was refreshed.

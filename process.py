@@ -1,8 +1,6 @@
 import os
 import cv2
 import numpy as np
-from flask import session
-
 from skimage import exposure, util
 from wbsrgb.wbsrg import WB
 from n2n.denoiser import DeNoiser
@@ -152,7 +150,7 @@ def clean_all_libs():
     del grower4
 
 
-def process_image(img, status):
+def process_image(img, session):
     # workflow 1 begins here for each image:
     print('white balance ........')
     session['status']['progress'] = 0
@@ -189,7 +187,7 @@ def process_image(img, status):
     return out6
 
 
-def run_array(input_arr, status):
+def run_array(input_arr, session):
     # load_all_libs()
 
     if session['status']['cancel_signal']:
@@ -201,7 +199,7 @@ def run_array(input_arr, status):
             return False
         print('Processing image %d from %d' % (img_id, len(input_arr)))
         session['status']['current_file'] = img_id
-        out_arr.append(process_image(img, status))
+        out_arr.append(process_image(img, session))
 
     if session['status']['cancel_signal']:
         return False

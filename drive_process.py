@@ -2,7 +2,6 @@ import io
 import cv2
 import numpy as np
 import threading
-from flask import session
 import googleapiclient.discovery
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
@@ -15,22 +14,23 @@ API_VERSION = 'v3'
 
 class ProcessThread (threading.Thread):
 
-    def __init__(self, credentials, folder_id):
+    def __init__(self, credentials, folder_id, session):
         threading.Thread.__init__(self)
         self.credentials = credentials
         self.folder_id = folder_id
+        self.session = session
 
     def run(self):
         print("Starting thread id = %d" % self.ident)
-        session['status']['my_thread_id'] = self.ident
-        session['status']['running'] = True
-        process_folder(self.credentials, self.folder_id)
-        session['status']['running'] = False
-        session.pop('status', None)
+        self.session['status']['my_thread_id'] = self.ident
+        self.session['status']['running'] = True
+        process_folder(self.credentials, self.folder_id, self.session)
+        self.session['status']['running'] = False
+        self.session.pop('status', None)
         print("Exiting thread id = %d" % self.ident)
 
 
-def process_folder(credentials, folder_id):
+def process_folder(credentials, folder_id, session):
 
     drive = googleapiclient.discovery.build(
         API_SERVICE_NAME, API_VERSION, credentials=credentials)
@@ -92,7 +92,7 @@ def process_folder(credentials, folder_id):
 
     # AQUI são processados todos os arquivos, uma vez que ele já foram jogados na pasta local
 
-    # result_arr = process.run_array(arr_files)
+    # result_arr = process.run_array(arr_files, session)
     result_arr = arr_files
 
     # -----------------------
