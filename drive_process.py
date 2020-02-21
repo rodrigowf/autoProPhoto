@@ -27,7 +27,7 @@ def make_status_dict():
     }
 
 
-def set_status(sess_id):
+def init_status(sess_id):
     status_list[sess_id] = make_status_dict()
     return status_list[sess_id]
 
@@ -36,7 +36,7 @@ def check_status(sess_id):
     return sess_id in status_list
 
 
-def get_status(sess_id):
+def my_status(sess_id):
     return status_list[sess_id]
 
 
@@ -50,12 +50,12 @@ class ProcessThread (threading.Thread):
         self.credentials = credentials
         self.folder_id = folder_id
         self.sess_id = sess_id
-        status = set_status(sess_id)
+        status = init_status(sess_id)
         status['my_thread'] = self
 
     def run(self):
         print("Starting thread")
-        status = get_status(self.sess_id)
+        status = my_status(self.sess_id)
         status['running'] = True
         process_folder(self.credentials, self.folder_id, self.sess_id)
         status['running'] = False
@@ -64,7 +64,7 @@ class ProcessThread (threading.Thread):
 
 
 def process_folder(credentials, folder_id, sess_id):
-    status = get_status(sess_id)
+    status = my_status(sess_id)
     status['running'] = True
 
     drive = googleapiclient.discovery.build(

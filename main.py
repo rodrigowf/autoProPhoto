@@ -7,7 +7,7 @@ import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 
-from drive_process import ProcessThread, get_status, check_status, clean_status
+from drive_process import ProcessThread, my_status, check_status, clean_status
 
 
 drive_redirect = 'https://refotos.appspot.com/drive'
@@ -30,7 +30,7 @@ app.secret_key = b'5oZW66$#^#3w3FE3'
 def has_status():
     if 'sid' in flask.session:  # Se tem ID salvo na session
         if check_status(flask.session['sid']):  # Se tem um status salvo para esse ID
-            if get_status(flask.session['sid'])['running']:  # Se esse status está em 'running'
+            if my_status(flask.session['sid'])['running']:  # Se esse status está em 'running'
                 return True
             else:
                 clean_status(flask.session['sid'])
@@ -95,7 +95,7 @@ def process_folder(folder_id):
         if not check_status(flask.session['sid']):
             flask.session.pop('sid')
         else:
-            status = get_status(flask.session['sid'])
+            status = my_status(flask.session['sid'])
             if status['running'] is True:
                 return flask.jsonify({'running': 'True'})
             elif not status['running']:
@@ -132,7 +132,7 @@ def get_fileslist():
         flask.session.pop('sid')
         return flask.jsonify({'running': 'False'})
 
-    status = get_status(flask.session['sid'])
+    status = my_status(flask.session['sid'])
 
     if not status['running']:
         clean_status(flask.session['sid'])
@@ -153,7 +153,7 @@ def get_status():
         flask.session.pop('sid')
         return flask.jsonify({'running': 'False'})
 
-    status = get_status(flask.session['sid'])
+    status = my_status(flask.session['sid'])
 
     if not status['running']:
         clean_status(flask.session['sid'])
@@ -176,7 +176,7 @@ def cancel_processing():
         return flask.jsonify({'running': 'False',
                               'done': 'False'})
 
-    status = get_status(flask.session['sid'])
+    status = my_status(flask.session['sid'])
     status['cancel_signal'] = True
 
     status['my_thread'].join()
