@@ -1,6 +1,5 @@
 import io
 import cv2
-import flask
 import numpy as np
 import threading
 import googleapiclient.discovery
