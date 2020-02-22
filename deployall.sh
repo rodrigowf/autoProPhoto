@@ -15,8 +15,15 @@
 # Echo commands
 set -v
 
-# ..... CONTINUAÇÃO do arquivo anterior após o REBOOT (deploy1.sh)
+# Install Stackdriver logging agent
+curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh
+sudo bash install-logging-agent.sh
 
+# Install or update needed software
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install -yq supervisor python3-pip
+pip3 install --upgrade pip virtualenv
 
 # Install development and runtime libraries (~4GB)
 sudo apt-get install --no-install-recommends \

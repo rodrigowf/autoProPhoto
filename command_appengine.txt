@@ -39,3 +39,5 @@ gcloud beta compute networks vpc-access connectors create memcacheconnector
 gcloud beta compute networks vpc-access connectors create memcacheconnector --network default --region southamerica-east1 --range 10.32.0.0/28
 
 10.139.0.0/28
+
+refotovm.us-central1-a.c.refotos.internal
