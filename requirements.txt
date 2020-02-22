@@ -1,4 +1,6 @@
 Flask
+honcho
+gunicorn
 requests
 Flask-Cors
 Flask-Session
@@ -14,5 +16,5 @@ torch
 torchvision
 colorama
 pillow>=3.2.0
-Theano==0.8.2
+Theano
 git+https://github.com/Lasagne/Lasagne.git@61b1ad1#egg=Lasagne==0.2-dev

@@ -1,7 +1,7 @@
 import flask
 import requests
 import uuid
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
