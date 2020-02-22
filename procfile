@@ -1,1 +1,1 @@
-runserver: ~/.local/bin/gunicorn -b :8080 main:app
+runserver: /home/rodrigowfranco/.local/bin/gunicorn -b :8080 main:app
